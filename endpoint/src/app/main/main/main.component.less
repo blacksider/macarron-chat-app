@@ -1,0 +1,81 @@
+@sidebar-w: 100px;
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: @sidebar-w;
+  height: 100%;
+  overflow-y: auto;
+  color: #fff;
+  background: #393836;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+}
+
+.user-info {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: @sidebar-w;
+  background: #292929;
+  width: @sidebar-w;
+
+  .avatar {
+    height: 60px;
+    background: url("/assets/images/logo.png") center no-repeat;
+  }
+
+  .user {
+    width: @sidebar-w;
+    height: 30px;
+    padding: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    a {
+      color: #fff;
+      text-decoration: none;
+
+      &:hover {
+        color: #dc904f;
+      }
+    }
+  }
+}
+
+.sidebar-navs {
+  margin-top: @sidebar-w;
+
+  .nav-item {
+    a {
+      display: inline-block;
+      position: relative;
+      font-size: .9rem;
+      font-weight: 300;
+      color: #fff;
+      text-decoration: none;
+      width: @sidebar-w;
+      padding: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &.active {
+        background-color: #c48047;
+      }
+
+      &:hover {
+        background-color: #dc904f;
+      }
+    }
+  }
+}
+
+.content {
+  margin-left: 100px;
+  height: 100%;
+}

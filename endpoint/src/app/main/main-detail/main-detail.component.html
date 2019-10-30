@@ -1,0 +1,23 @@
+<div class="main-body">
+  <div class="main-menu">
+    <div class="menu-items">
+      <div class="menu-item" routerLink="/app/main/setting" routerLinkActive="active">
+        <a href="javascript:;">
+          <i class="fa fa-gears"></i>&nbsp;设置
+        </a>
+      </div>
+      <div class="menu-item" (click)="doLogout()">
+        <a href="javascript:;"><i class="fa fa-sign-out"></i>&nbsp;退出</a>
+      </div>
+    </div>
+    <div class="user-label">
+      <img [src]="'data:image/png;base64,' + authInfo.avatar">
+      <span class="username">{{authInfo.username}}</span>
+      <span class="tag">#{{authInfo.tag}}</span>
+    </div>
+  </div>
+  <div class="main-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+

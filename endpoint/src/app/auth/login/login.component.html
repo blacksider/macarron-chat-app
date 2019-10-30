@@ -1,0 +1,35 @@
+<div class="login-page">
+  <div class="container">
+    <div class="form-outer text-center d-flex align-items-center">
+      <div class="form-inner">
+        <div class="logo">
+          <div class="logo-img"></div>&nbsp;
+          <span>聊天室</span>&nbsp;
+          <strong class="text-primary">登录</strong>
+        </div>
+        <br>
+        <form method="get" class="text-left form-validate" #loginForm="ngForm" novalidate autocomplete="off">
+          <div class="form-group">
+            <input id="login-username" type="text" name="loginUsername" required
+                   placeholder="请输入邮箱" #loginName="ngModel"
+                   class="form-control" [(ngModel)]="authReq.loginName"
+                   [ngClass]="{'error': loginName.invalid && (loginName.touched || loginName.dirty)}">
+          </div>
+          <div class="form-group">
+            <input id="login-password" type="password" name="loginPassword" required
+                   placeholder="请输入密码" #loginPassword="ngModel"
+                   class="form-control" [(ngModel)]="authReq.password"
+                   [ngClass]="{'error': loginPassword.invalid && (loginPassword.touched || loginPassword.dirty)}">
+          </div>
+          <div class="form-group">
+            <a id="login" href="javascript:;" class="btn btn-primary w-100"
+               (click)="doLogin()">登录</a>
+          </div>
+          <div class="form-group">
+            <span class="text-black-50">尚未注册？</span><a href="javascript:;" routerLink="/auth/register">注册</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

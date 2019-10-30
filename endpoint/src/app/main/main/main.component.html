@@ -1,0 +1,20 @@
+<div class="sidebar">
+  <div class="user-info">
+    <div class="avatar"></div>
+    <div class="user text-center"><a href="javascript:;">{{authInfo.username}}</a></div>
+  </div>
+  <div class="sidebar-navs">
+    <div class="nav-item">
+      <a href="javascript:;" routerLink="/app/main" routerLinkActive="active"><i class="fa fa-home"></i>&nbsp;主页</a>
+    </div>
+    <div class="nav-item" *ngFor="let server of servers">
+      <a href="javascript:;" [routerLink]="'/app/server/' + server.id" routerLinkActive="active"
+         title="{{server.name}}">
+        {{server.name}}
+      </a>
+    </div>
+  </div>
+</div>
+<div class="content">
+  <router-outlet></router-outlet>
+</div>

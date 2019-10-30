@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: server
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+  messages:
+    basename: messages
+  freemarker:
+    prefer-file-system-access: false
+    template-loader-path: classpath:/templates/
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chatserver
+    username: chatserveradmin
+    password: chatserveradmin
+    initialization-mode: always
+    sql-script-encoding: UTF-8
+    tomcat:
+      test-while-idle: true
+      test-on-borrow: true
+      validation-query: SELECT 1
+      time-between-eviction-runs-millis: 5000
+      min-evictable-idle-time-millis: 10000
+      max-active: 20
+      max-idle: 20
+      min-idle: 5
+      validation-query-timeout: 3
+    driver-class-name: org.postgresql.Driver
+    platform: postgresql
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: com.macarron.chat.server.config.type.LocalPostgresqlDialect
+        temp:
+          use_jdbc_metadata_defaults: false
+    show-sql: true
+    database: postgresql
+
+  redis:
+    port: 6379
+    host: localhost
+    timeout: 3000
+    lettuce:
+      pool:
+        max-active: 500
+        max-idle: 500
+        max-wait: 3000
+        min-idle: 0
+    database: 0
+
+  session:
+    timeout: 600
+
+  cache:
+    type: redis
+    redis:
+      key-prefix: 'server:cache:'

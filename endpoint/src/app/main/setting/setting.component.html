@@ -1,0 +1,18 @@
+<label for="selectInput">音频输入</label>
+<select id="selectInput" class="form-control form-control-sm w-auto d-inline-block"
+        [(ngModel)]="selectedAudioInput">
+  <option [ngValue]="defaultId">默认设备</option>
+  <option *ngFor="let input of audioInputs">{{input.label}}</option>
+</select>
+<label for="selectOutput">音频输出</label>
+<select id="selectOutput" class="form-control form-control-sm w-auto d-inline-block"
+        [(ngModel)]="selectedAudioOutput">
+  <option [ngValue]="defaultId">默认设备</option>
+  <option *ngFor="let output of audioOutputs">{{output.label}}</option>
+</select>
+<label for="selectVideoInput">视频设备</label>
+<select id="selectVideoInput" class="form-control form-control-sm w-auto d-inline-block"
+        [(ngModel)]="selectedVideoInput">
+  <option [ngValue]="null">无设备</option>
+  <option *ngFor="let input of videoInputs">{{input.label}}</option>
+</select>

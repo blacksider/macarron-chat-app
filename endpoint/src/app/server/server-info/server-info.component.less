@@ -1,0 +1,124 @@
+@content-header-h: 50px;
+@sidebar-bg-color: #393836;
+@left-bg-color: lighten(@sidebar-bg-color, 10%);
+
+.main-container {
+  display: flex;
+  height: 100%;
+
+  .head {
+    height: @content-header-h;
+    border-bottom: 1px solid darken(@left-bg-color, 10%);
+  }
+
+  .body {
+    flex-grow: 1;
+  }
+
+  .container-left {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    background-color: @left-bg-color;
+
+    .head {
+      h5 {
+        margin: 0;
+        line-height: @content-header-h;
+      }
+    }
+
+    .body {
+      .room {
+        padding: 5px 10px;
+        cursor: pointer;
+
+        &.active {
+          background-color: lighten(@left-bg-color, 10%);
+        }
+
+        &:hover {
+          background-color: lighten(@left-bg-color, 15%);
+        }
+      }
+    }
+  }
+
+  .container-right {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+
+    .messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+
+      &::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #aaaaaa;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      .message {
+        border-bottom: 1px solid rgba(204, 204, 204, 0.5);
+        padding: 15px 0;
+
+        .message-from {
+          .user {
+            font-size:18px;
+            font-style: italic;
+            color: cornflowerblue;
+            padding-right: 5px;
+          }
+
+          .time {
+            color: #ccc;
+            font-size: 12px;
+          }
+        }
+
+        .message-content {
+          text-indent: 2em;
+        }
+      }
+    }
+
+    .input {
+      height: 120px;
+      padding: 10px 10px 0 10px;
+      display: flex;
+      flex-direction: column;
+
+      textarea {
+        height: 100%;
+        width: 100%;
+        resize: none;
+        background-color: lighten(@sidebar-bg-color, 30%);
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+
+        &::placeholder {
+          color: rgba(238, 238, 238, 0.5);
+        }
+      }
+
+      .buttons {
+        padding: 5px 0;
+      }
+    }
+  }
+}
