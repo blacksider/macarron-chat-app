@@ -11,9 +11,11 @@ import java.io.Serializable;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "type", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = MessageFromUser.class, name = MessageConstants.MESSAGE_FROM_USER),
+        @JsonSubTypes.Type(value = MessageFromUser.class,
+                name = MessageConstants.MessageFromTypes.MESSAGE_FROM_USER),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MessageFrom implements Serializable {

@@ -14,10 +14,16 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @EnableWebSocket
 public class WebsocketConfig implements WebSocketConfigurer {
     private UserMessageHandler userMessageHandler;
+    private AuthTokenHandShakeInterceptor authTokenHandShakeInterceptor;
 
     @Autowired
     public void setUserMessageHandler(UserMessageHandler userMessageHandler) {
         this.userMessageHandler = userMessageHandler;
+    }
+
+    @Autowired
+    public void setAuthTokenHandShakeInterceptor(AuthTokenHandShakeInterceptor authTokenHandShakeInterceptor) {
+        this.authTokenHandShakeInterceptor = authTokenHandShakeInterceptor;
     }
 
     @Bean
@@ -30,6 +36,7 @@ public class WebsocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(userMessageHandler, "/ws/user/message");
+        registry.addHandler(userMessageHandler, "/ws/connect")
+                .addInterceptors(authTokenHandShakeInterceptor);
     }
 }

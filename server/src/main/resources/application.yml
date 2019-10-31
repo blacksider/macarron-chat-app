@@ -53,7 +53,7 @@ spring:
     database: 0
 
   session:
-    timeout: 600
+    timeout: 1800
 
   cache:
     type: redis

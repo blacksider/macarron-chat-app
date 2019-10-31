@@ -1,13 +1,13 @@
 <div class="main-container">
   <div class="container-left">
     <div class="head">
-      <h5 class="text-center">{{serverInfo.name}}</h5>
+      <h5 class="text-center">{{serverInfo ? serverInfo.serverName : ''}}</h5>
     </div>
     <div class="body">
-      <div class="room" *ngFor="let room of rooms"
+      <div class="room" *ngFor="let room of channels"
            (click)="connectTo(room)"
            [ngClass]="{'active': isInRoom(room)}">
-        <span>{{room.name}}</span>
+        <span>{{room.channelName}}</span>
         <div class="room-users">
 
         </div>
@@ -16,7 +16,7 @@
   </div>
   <div class="container-right">
     <div class="messages" #messageContainer>
-      <div *ngFor="let msg of messages">
+      <!--<div *ngFor="let msg of messages">
         <div class="message">
           <div class="message-from">
             <span class="user">{{msg.from}}</span>
@@ -26,7 +26,7 @@
             {{msg.message}}
           </div>
         </div>
-      </div>
+      </div>-->
     </div>
     <div class="input">
       <textarea placeholder="Input message" #inputMsg [disabled]="!connected"></textarea>

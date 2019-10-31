@@ -12,7 +12,6 @@ export class AppComponent implements OnInit {
   remote: typeof remote;
 
   constructor() {
-    console.log(this.isElectron());
     if (this.isElectron()) {
       this.ipcRenderer = require('electron').ipcRenderer;
       this.webFrame = require('electron').webFrame;

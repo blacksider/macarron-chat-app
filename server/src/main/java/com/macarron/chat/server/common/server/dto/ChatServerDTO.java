@@ -16,7 +16,7 @@ public class ChatServerDTO {
         ChatServerDTO dto = new ChatServerDTO();
         dto.setId(server.getId());
         dto.setServerName(server.getServerName());
-        dto.setAvatar(AvatarUtils.parseToBase64Png(server.getAvatar()));
+//        dto.setAvatar(AvatarUtils.parseToBase64Png(server.getAvatar()));
         return dto;
     }
 }

@@ -1,4 +1,4 @@
-@sidebar-w: 100px;
+@sidebar-w: 60px;
 
 .sidebar {
   position: fixed;
@@ -19,7 +19,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  height: @sidebar-w;
+  height: @sidebar-w + 10px;
   background: #292929;
   width: @sidebar-w;
 
@@ -51,6 +51,11 @@
   margin-top: @sidebar-w;
 
   .nav-item {
+    img {
+      width: 38px;
+      border-radius: 15px;
+    }
+
     a {
       display: inline-block;
       position: relative;
@@ -59,23 +64,27 @@
       color: #fff;
       text-decoration: none;
       width: @sidebar-w;
-      padding: 12px;
+      padding: 10px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
+      i {
+        font-size: 2.5em;
+      }
 
       &.active {
         background-color: #c48047;
       }
 
       &:hover {
-        background-color: #dc904f;
+        background-color: #e79951;
       }
     }
   }
 }
 
 .content {
-  margin-left: 100px;
+  margin-left: @sidebar-w;
   height: 100%;
 }

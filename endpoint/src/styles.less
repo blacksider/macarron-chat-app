@@ -11,3 +11,22 @@ body {
   background: #636260;
   color: #fff;
 }
+
+@modal-base-color: #636260;
+
+.modal-header, .modal-body, .modal-footer {
+  padding: 10px;
+  border: none;
+}
+
+.modal-content {
+  background: none;
+}
+
+.modal-header, .modal-footer {
+  background-color: darken(@modal-base-color, 10%);
+}
+
+.modal-body {
+  background-color: @modal-base-color;
+}

@@ -1,18 +1,54 @@
-import {Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable} from 'rxjs';
-import {ServerInfo, ServerRoomInfo} from './server-info';
+import {EventEmitter, Injectable} from '@angular/core';
+import {ChatServer} from './chat-server';
+import {ChatServerChannel} from './chat-server-channel';
+import {Observable, of} from 'rxjs';
+import {filter, mergeMap} from 'rxjs/operators';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ServerInfoService {
-  constructor(private http: HttpClient) {
+  private servers: ChatServer[];
+  private serverChange = new EventEmitter<ChatServer[]>();
+  private serverChannels: Map<number, ChatServerChannel[]>;
+  private serverChannelsChange = new EventEmitter<Map<number, ChatServerChannel[]>>();
+
+  constructor() {
+    this.servers = [];
+    this.serverChannels = new Map<number, ChatServerChannel[]>();
   }
 
-  getServerInfo(id: string): Observable<ServerInfo> {
-    return this.http.get<ServerInfo>('/api/server/info/' + id);
+  setServers(servers: ChatServer[]) {
+    this.servers = servers;
+    this.serverChange.emit(this.servers);
   }
 
-  listServerRooms(id: string): Observable<ServerRoomInfo[]> {
-    return this.http.get<ServerRoomInfo[]>('/api/server/room?id=' + id);
+  getServers(): Observable<ChatServer[]> {
+    return this.serverChange.pipe(
+      filter(value => !!value)
+    );
+  }
+
+  getServer(serverId: number): Observable<ChatServer> {
+    return this.serverChange.pipe(
+      mergeMap((servers, i) => {
+        return of(this.servers.find(value => value.id === serverId));
+      }),
+      filter(value => !!value)
+    );
+  }
+
+  appendChannels(serverId: number, channels: ChatServerChannel[]) {
+    this.serverChannels.set(serverId, channels);
+    this.serverChannelsChange.emit(this.serverChannels);
+  }
+
+  getChannels(serverId: number): Observable<ChatServerChannel[]> {
+    return this.serverChannelsChange.pipe(
+      mergeMap((channelMap, i) => {
+        return of(channelMap.get(serverId));
+      }),
+      filter(value => !!value)
+    );
   }
 }

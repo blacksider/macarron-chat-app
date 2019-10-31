@@ -1,16 +1,22 @@
 <div class="sidebar">
   <div class="user-info">
     <div class="avatar"></div>
-    <div class="user text-center"><a href="javascript:;">{{authInfo.username}}</a></div>
   </div>
   <div class="sidebar-navs">
     <div class="nav-item">
-      <a href="javascript:;" routerLink="/app/main" routerLinkActive="active"><i class="fa fa-home"></i>&nbsp;主页</a>
+      <a href="javascript:;" routerLink="/app/main" routerLinkActive="active" title="主页">
+        <i class="fa fa-home"></i>
+      </a>
     </div>
     <div class="nav-item" *ngFor="let server of servers">
       <a href="javascript:;" [routerLink]="'/app/server/' + server.id" routerLinkActive="active"
-         title="{{server.name}}">
-        {{server.name}}
+         title="{{server.serverName}}">
+        <img [src]="'data:image/png;base64,' + server.avatar">
+      </a>
+    </div>
+    <div class="nav-item">
+      <a href="javascript:;" title="添加" (click)="addServer()">
+        <i class="fa fa-plus-circle"></i>
       </a>
     </div>
   </div>

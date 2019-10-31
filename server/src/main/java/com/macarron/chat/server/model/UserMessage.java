@@ -37,9 +37,7 @@ public class UserMessage {
     private MessageTo messageTo;
     /**
      * ref to
-     * {@link com.macarron.chat.server.common.message.MessageConstants#TYPE_FILE}
-     * {@link com.macarron.chat.server.common.message.MessageConstants#TYPE_IMG}
-     * {@link com.macarron.chat.server.common.message.MessageConstants#TYPE_TEXT}
+     * {@link com.macarron.chat.server.common.message.MessageConstants.MessageTypes}
      */
     @Column(name = "message_type")
     private int messageType;
