@@ -30,6 +30,10 @@ export class ServerInfoService {
   }
 
   getServer(serverId: number): Observable<ChatServer> {
+    const findSvr = this.servers.find(value => value.id === serverId);
+    if (findSvr) {
+      return of(findSvr);
+    }
     return this.serverChange.pipe(
       mergeMap((servers, i) => {
         return of(this.servers.find(value => value.id === serverId));
@@ -44,8 +48,12 @@ export class ServerInfoService {
   }
 
   getChannels(serverId: number): Observable<ChatServerChannel[]> {
+    const findC = this.serverChannels.get(serverId);
+    if (!!findC) {
+      return of(findC);
+    }
     return this.serverChannelsChange.pipe(
-      mergeMap((channelMap, i) => {
+      mergeMap((channelMap) => {
         return of(channelMap.get(serverId));
       }),
       filter(value => !!value)

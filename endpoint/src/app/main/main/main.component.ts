@@ -10,6 +10,7 @@ import {
   MESSAGE_TYPE_GET_SERVERS,
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
   MESSAGE_TYPE_REPLY_SERVERS,
+  MESSAGE_TYPE_TEXT,
   MessageFromUser,
   MessageToUser
 } from '../bia-message';
@@ -50,12 +51,17 @@ export class MainComponent implements OnInit, OnDestroy {
             this.parseServerChannels(value.message);
             break;
           }
+          case MESSAGE_TYPE_TEXT: {
+            this.parseTextMessage(value);
+            break;
+          }
           default: {
             break;
           }
         }
       });
-      this.globalSocketSubject.next({
+      this.globalSocketSubject.send({
+        time: new Date().getTime(),
         messageFrom: {
           type: MESSAGE_FROM_USER,
           userId: this.authInfo.userId,
@@ -84,7 +90,6 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private parseServers(message: number[]) {
     const servers = JSON.parse(byteArray2Str(message)) as ChatServer[];
-    console.log(byteArray2Str(message));
     this.serverInfoService.setServers(servers);
   }
 
@@ -95,5 +100,9 @@ export class MainComponent implements OnInit, OnDestroy {
   private parseServerChannels(message: number[]) {
     const channelData = JSON.parse(byteArray2Str(message)) as ServerChannelWrap;
     this.serverInfoService.appendChannels(channelData.serverId, channelData.channels);
+  }
+
+  private parseTextMessage(value: BiaMessage) {
+    this.wsConnService.addChannelMessage(value);
   }
 }

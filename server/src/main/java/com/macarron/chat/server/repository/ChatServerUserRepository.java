@@ -16,6 +16,9 @@ public interface ChatServerUserRepository extends JpaRepository<ChatServerUser, 
     @Query("select distinct(svu.user) from ChatServerUser svu where svu.userGroup.server=?1")
     List<ServerUser> getServerUsers(final ChatServer server);
 
+    @Query("select distinct(svu.user.email) from ChatServerUser svu where svu.userGroup.server.id=?1")
+    List<String> getUserEmailsByServerId(long serverId);
+
     List<ChatServerUser> findByUserGroup(final ChatServerUserGroup group);
 
     @Query("select count(svu) from ChatServerUser svu where svu.user.email=?1 and svu.userGroup.server.id=?2")

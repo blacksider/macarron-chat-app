@@ -1,5 +1,5 @@
 export class ChatServerChannel {
-  id: string;
+  id: number;
   channelName: string;
 }
 

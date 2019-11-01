@@ -37,6 +37,7 @@ public class WebsocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(userMessageHandler, "/ws/connect")
-                .addInterceptors(authTokenHandShakeInterceptor);
+                .addInterceptors(authTokenHandShakeInterceptor)
+                .setAllowedOrigins("*");
     }
 }

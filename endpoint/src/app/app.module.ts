@@ -9,6 +9,7 @@ import {NgxPermissionsModule} from 'ngx-permissions';
 import {LocalInterceptor} from './auth/local-interceptor';
 import {ToastrModule} from 'ngx-toastr';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import {NgxElectronModule} from 'ngx-electron';
 
 const httpInterceptorProviders = [
   {provide: HTTP_INTERCEPTORS, useClass: LocalInterceptor, multi: true},
@@ -23,6 +24,7 @@ const httpInterceptorProviders = [
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    NgxElectronModule,
     ToastrModule.forRoot({
       positionClass: 'toast-bottom-right',
       closeButton: true,

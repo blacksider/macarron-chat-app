@@ -4,36 +4,33 @@
       <h5 class="text-center">{{serverInfo ? serverInfo.serverName : ''}}</h5>
     </div>
     <div class="body">
-      <div class="room" *ngFor="let room of channels"
+      <div class="channel" *ngFor="let room of channels"
            (click)="connectTo(room)"
-           [ngClass]="{'active': isInRoom(room)}">
+           [ngClass]="{'active': isInChannel(room)}">
         <span>{{room.channelName}}</span>
-        <div class="room-users">
-
-        </div>
       </div>
     </div>
   </div>
   <div class="container-right">
     <div class="messages" #messageContainer>
-      <!--<div *ngFor="let msg of messages">
+      <div *ngFor="let msg of channelMessages">
         <div class="message">
           <div class="message-from">
-            <span class="user">{{msg.from}}</span>
+            <span class="user">{{msg.messageFrom['username']}}</span>
             <span class="time">{{msg.time|date: 'yyyy-MM-dd HH:mm:ss'}}</span>
           </div>
           <div class="message-content">
-            {{msg.message}}
+            {{parseTextMessage(msg.message)}}
           </div>
         </div>
-      </div>-->
+      </div>
     </div>
     <div class="input">
-      <textarea placeholder="Input message" #inputMsg [disabled]="!connected"></textarea>
+      <textarea placeholder="输入消息" #inputMsg [disabled]="!connected"></textarea>
       <div class="buttons">
         <button type="button" class="btn btn-primary btn-sm float-right"
                 [disabled]="!connected"
-                (click)="sendMessage()">Send
+                (click)="sendMessage()">&nbsp;&nbsp;发送&nbsp;&nbsp;
         </button>
       </div>
     </div>

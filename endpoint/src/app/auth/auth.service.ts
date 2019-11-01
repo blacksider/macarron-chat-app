@@ -8,6 +8,7 @@ import {NgxPermissionsService} from 'ngx-permissions';
 import {Observable, of} from 'rxjs';
 import {catchError, switchMap, tap} from 'rxjs/operators';
 import {UserRegister} from './user-register';
+import {environment} from '../../environments/environment';
 
 // must be provided in root module
 @Injectable({
@@ -28,14 +29,14 @@ export class AuthService {
   register(req: UserRegister): Observable<any> {
     const cloned = Object.assign({}, req);
     cloned.password = window.btoa(req.password);
-    return this.http.post('/api/auth/register', cloned);
+    return this.http.post(`${environment.apiUrl}/api/auth/register`, cloned);
   }
 
 
   login(req: AuthReq): Observable<AuthInfo> {
     const cloned = Object.assign({}, req);
     cloned.password = window.btoa(req.password);
-    return this.http.post('/api/auth/login', cloned, {observe: 'response'})
+    return this.http.post(`${environment.apiUrl}/api/auth/login`, cloned, {observe: 'response'})
       .pipe(
         switchMap(res => {
           if (!!res) {
@@ -54,7 +55,7 @@ export class AuthService {
   }
 
   loginInfo(): Observable<AuthInfo> {
-    return this.http.get<AuthInfo>('/api/auth/info')
+    return this.http.get<AuthInfo>(`${environment.apiUrl}/api/auth/info`)
       .pipe(
         tap(res => {
           if (!!res) {
@@ -71,7 +72,7 @@ export class AuthService {
   }
 
   logout(): Observable<boolean> {
-    return this.http.get('/api/auth/logout', {observe: 'response'})
+    return this.http.get(`${environment.apiUrl}/api/auth/logout`, {observe: 'response'})
       .pipe(
         catchError(this.handleError('退出异常', null)),
         switchMap<HttpResponse<any>, Observable<boolean>>(res => {

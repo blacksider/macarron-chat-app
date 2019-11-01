@@ -4,6 +4,7 @@ import {BsModalRef} from 'ngx-bootstrap';
 import {NgForm} from '@angular/forms';
 import {HttpClient} from '@angular/common/http';
 import {ToastrService} from 'ngx-toastr';
+import {environment} from '../../../environments/environment';
 
 @Component({
   selector: 'app-add-server',
@@ -12,7 +13,7 @@ import {ToastrService} from 'ngx-toastr';
 })
 export class AddServerComponent implements OnInit {
   @ViewChild('form', {static: true}) form: NgForm;
-  private server: AddServerReq;
+  server: AddServerReq;
 
   constructor(public bsModalRef: BsModalRef,
               private toastr: ToastrService,
@@ -34,7 +35,7 @@ export class AddServerComponent implements OnInit {
       });
       return;
     }
-    this.http.post<any>('/api/server', this.server).subscribe(_ => {
+    this.http.post<any>(`${environment.apiUrl}/api/server`, this.server).subscribe(_ => {
       this.toastr.success('创建成功').onShown.subscribe(() => {
         this.close();
       });

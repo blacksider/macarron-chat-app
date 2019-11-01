@@ -10,7 +10,7 @@
     </div>
     <div class="nav-item" *ngFor="let server of servers">
       <a href="javascript:;" [routerLink]="'/app/server/' + server.id" routerLinkActive="active"
-         title="{{server.serverName}}">
+         [title]="server.serverName">
         <img [src]="'data:image/png;base64,' + server.avatar">
       </a>
     </div>
@@ -22,5 +22,10 @@
   </div>
 </div>
 <div class="content">
+  <div class="user-label">
+    <img [src]="'data:image/png;base64,' + authInfo.avatar">
+    <span class="username">{{authInfo.username}}</span>
+    <span class="tag">#{{authInfo.tag}}</span>
+  </div>
   <router-outlet></router-outlet>
 </div>

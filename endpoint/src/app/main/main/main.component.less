@@ -1,4 +1,6 @@
 @sidebar-w: 60px;
+@sidebar-bg-color: #393836;
+@left-bg-color: lighten(@sidebar-bg-color, 10%);
 
 .sidebar {
   position: fixed;
@@ -25,7 +27,7 @@
 
   .avatar {
     height: 60px;
-    background: url("/assets/images/logo.png") center no-repeat;
+    background: url("../../../assets/images/logo.png") center no-repeat;
   }
 
   .user {
@@ -48,29 +50,31 @@
 }
 
 .sidebar-navs {
-  margin-top: @sidebar-w;
+  margin-top: @sidebar-w + 20;
+  padding: 0 5px;
 
   .nav-item {
     img {
-      width: 38px;
+      width: 28px;
       border-radius: 15px;
     }
 
     a {
+      border-radius: 4px;
       display: inline-block;
       position: relative;
       font-size: .9rem;
       font-weight: 300;
       color: #fff;
       text-decoration: none;
-      width: @sidebar-w;
+      width: @sidebar-w - 10;
       padding: 10px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
 
       i {
-        font-size: 2.5em;
+        font-size: 2em;
       }
 
       &.active {
@@ -85,6 +89,36 @@
 }
 
 .content {
+  position: relative;
   margin-left: @sidebar-w;
   height: 100%;
+
+  .user-label {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    padding: 10px;
+    height: 50px;
+    text-align: center;
+    background-color: darken(@left-bg-color, 5%);
+
+    .username {
+      font-size: 18px;
+      font-weight: bolder;
+    }
+
+    .tag {
+      color: rgba(255, 255, 255, .5);
+      font-size: 14px;
+    }
+
+    img {
+      width: 30px;
+      padding: 4px;
+      border-radius: 15px;
+      background-color: @left-bg-color;
+      margin-right: 5px;
+    }
+  }
 }

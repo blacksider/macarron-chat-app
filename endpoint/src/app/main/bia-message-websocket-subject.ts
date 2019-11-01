@@ -4,18 +4,113 @@ import {AuthService} from '../auth/auth.service';
 import {distinctUntilChanged, share, takeUntil, takeWhile} from 'rxjs/operators';
 import {EventEmitter} from '@angular/core';
 
-export function arrayBuffer2Str(buf: ArrayBuffer): string {
-  console.log(new Int8Array(buf));
-  return String.fromCharCode.apply(null, new Int8Array(buf));
+export function strToUtf8Bytes(str) {
+  const bytes = [];
+  const len = str.length;
+  for (let i = 0; i < len; ++i) {
+    const code = str.charCodeAt(i);
+    if (code >= 0x10000 && code <= 0x10ffff) {
+      bytes.push((code >> 18) | 0xf0);
+      bytes.push(((code >> 12) & 0x3f) | 0x80);
+      bytes.push(((code >> 6) & 0x3f) | 0x80);
+      bytes.push((code & 0x3f) | 0x80);
+    } else if (code >= 0x800 && code <= 0xffff) {
+      bytes.push((code >> 12) | 0xe0);
+      bytes.push(((code >> 6) & 0x3f) | 0x80);
+      bytes.push((code & 0x3f) | 0x80);
+    } else if (code >= 0x80 && code <= 0x7ff) {
+      bytes.push((code >> 6) | 0xc0);
+      bytes.push((code & 0x3f) | 0x80);
+    } else {
+      bytes.push(code);
+    }
+  }
+
+  return bytes;
+}
+
+export function utf8ByteToUnicodeStr(utf8Bytes) {
+  let unicodeStr = '';
+  for (let pos = 0; pos < utf8Bytes.length;) {
+    const flag = utf8Bytes[pos];
+    let unicode = 0;
+    if ((flag >>> 7) === 0) {
+      unicodeStr += String.fromCharCode(utf8Bytes[pos]);
+      pos += 1;
+
+    } else if ((flag & 0xFC) === 0xFC) {
+      unicode = (utf8Bytes[pos] & 0x3) << 30;
+      unicode |= (utf8Bytes[pos + 1] & 0x3F) << 24;
+      unicode |= (utf8Bytes[pos + 2] & 0x3F) << 18;
+      unicode |= (utf8Bytes[pos + 3] & 0x3F) << 12;
+      unicode |= (utf8Bytes[pos + 4] & 0x3F) << 6;
+      unicode |= (utf8Bytes[pos + 5] & 0x3F);
+      unicodeStr += String.fromCharCode(unicode);
+      pos += 6;
+
+    } else if ((flag & 0xF8) === 0xF8) {
+      unicode = (utf8Bytes[pos] & 0x7) << 24;
+      unicode |= (utf8Bytes[pos + 1] & 0x3F) << 18;
+      unicode |= (utf8Bytes[pos + 2] & 0x3F) << 12;
+      unicode |= (utf8Bytes[pos + 3] & 0x3F) << 6;
+      unicode |= (utf8Bytes[pos + 4] & 0x3F);
+      unicodeStr += String.fromCharCode(unicode);
+      pos += 5;
+
+    } else if ((flag & 0xF0) === 0xF0) {
+      unicode = (utf8Bytes[pos] & 0xF) << 18;
+      unicode |= (utf8Bytes[pos + 1] & 0x3F) << 12;
+      unicode |= (utf8Bytes[pos + 2] & 0x3F) << 6;
+      unicode |= (utf8Bytes[pos + 3] & 0x3F);
+      unicodeStr += String.fromCharCode(unicode);
+      pos += 4;
+
+    } else if ((flag & 0xE0) === 0xE0) {
+      unicode = (utf8Bytes[pos] & 0x1F) << 12;
+      unicode |= (utf8Bytes[pos + 1] & 0x3F) << 6;
+      unicode |= (utf8Bytes[pos + 2] & 0x3F);
+      unicodeStr += String.fromCharCode(unicode);
+      pos += 3;
+
+    } else if ((flag & 0xC0) === 0xC0) { // 110
+      unicode = (utf8Bytes[pos] & 0x3F) << 6;
+      unicode |= (utf8Bytes[pos + 1] & 0x3F);
+      unicodeStr += String.fromCharCode(unicode);
+      pos += 2;
+
+    } else {
+      unicodeStr += String.fromCharCode(utf8Bytes[pos]);
+      pos += 1;
+    }
+  }
+  return unicodeStr;
 }
 
 export function str2ArrayBuffer(str: string): ArrayBuffer {
-  const buf = new ArrayBuffer(str.length);
+  const utf8Arr = encodeUtf8(JSON.stringify(str));
+  const buf = new ArrayBuffer(utf8Arr.length);
   const bufView = new Int8Array(buf);
-  for (let i = 0, strLen = str.length; i < strLen; i++) {
-    bufView[i] = str.charCodeAt(i);
+  for (let i = 0, strLen = utf8Arr.length; i < strLen; i++) {
+    bufView[i] = utf8Arr[i];
   }
   return buf;
+}
+
+export function encodeUtf8(text: string): number[] {
+  const code = encodeURIComponent(text);
+  const bytes = [];
+  for (let i = 0; i < code.length; i++) {
+    const c = code.charAt(i);
+    if (c === '%') {
+      const hex = code.charAt(i + 1) + code.charAt(i + 2);
+      const hexVal = parseInt(hex, 16);
+      bytes.push(hexVal);
+      i += 2;
+    } else {
+      bytes.push(c.charCodeAt(0));
+    }
+  }
+  return bytes;
 }
 
 export function str2ByteArray(str: string): number[] {
@@ -43,14 +138,16 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
   private socket: WebSocketSubject<T>;
   private reconnectInterval = 5000;
   private reconnectAttempts = 10;
+  isReady = false;
   ready = new EventEmitter<boolean>();
 
   static defaultSerializer(value) {
-    return str2ArrayBuffer(JSON.stringify(value));
+    return str2ArrayBuffer(value);
   }
 
   static defaultDeserializer(e) {
-    return JSON.parse(arrayBuffer2Str(e.data));
+    const arr = new Int8Array(e.data);
+    return JSON.parse(utf8ByteToUnicodeStr(arr));
   }
 
   constructor(
@@ -70,13 +167,15 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
         next: () => {
           this.socket = null;
           this.connectionObserver.next(false);
-          this.ready.emit(false);
+          this.isReady = false;
+          this.ready.emit(this.isReady);
         }
       },
       openObserver: {
         next: () => {
           this.connectionObserver.next(true);
-          this.ready.emit(true);
+          this.isReady = true;
+          this.ready.emit(this.isReady);
         }
       }
     };
@@ -127,8 +226,7 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
     });
   }
 
-  next(value?: T): void {
-    super.next(value);
+  send(value?: T): void {
     this.socket.next(value);
   }
 

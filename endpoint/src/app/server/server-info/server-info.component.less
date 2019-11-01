@@ -13,6 +13,26 @@
 
   .body {
     flex-grow: 1;
+    padding-bottom: 50px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #aaaaaa;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
   }
 
   .container-left {
@@ -29,9 +49,11 @@
     }
 
     .body {
-      .room {
+      padding: 5px;
+      .channel {
         padding: 5px 10px;
         cursor: pointer;
+        border-radius: 4px;
 
         &.active {
           background-color: lighten(@left-bg-color, 10%);

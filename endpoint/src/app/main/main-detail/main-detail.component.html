@@ -10,11 +10,6 @@
         <a href="javascript:;"><i class="fa fa-sign-out"></i>&nbsp;退出</a>
       </div>
     </div>
-    <div class="user-label">
-      <img [src]="'data:image/png;base64,' + authInfo.avatar">
-      <span class="username">{{authInfo.username}}</span>
-      <span class="tag">#{{authInfo.tag}}</span>
-    </div>
   </div>
   <div class="main-content">
     <router-outlet></router-outlet>

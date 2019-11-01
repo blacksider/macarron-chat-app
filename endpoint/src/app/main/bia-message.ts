@@ -10,6 +10,7 @@ export class MessageFromUser extends MessageFrom {
 }
 
 export const MESSAGE_TO_USER = 'USER';
+export const MESSAGE_TO_SERVER_CHANNEL = 'SERVER_CHANNEL';
 
 export class MessageTo {
   type: string;
@@ -18,6 +19,11 @@ export class MessageTo {
 export class MessageToUser extends MessageTo {
   userId: number;
   username: string;
+}
+
+export class MessageToServerChannel extends MessageTo {
+  serverId: number;
+  channelId: number;
 }
 
 export const MESSAGE_TYPE_TEXT = 1000;
@@ -34,5 +40,6 @@ export class BiaMessage {
   messageFrom: MessageFrom;
   messageTo: MessageTo;
   messageType: number;
+  time: number;
   message: number[];
 }

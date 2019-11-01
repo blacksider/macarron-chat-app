@@ -1,18 +1,20 @@
 {
-  "name": "chat-endpoint",
+  "name": "endpoint",
   "version": "0.0.1",
+  "author": "Macarron",
   "main": "main.js",
   "scripts": {
     "ng": "ng",
     "start": "npm run postinstall:electron && npm-run-all -p ng:serve electron:serve",
-    "build": "npm run postinstall:electron && npm run electron:serve-tsc && ng build --prod",
+    "build": "npm run postinstall:electron && npm run electron:serve-tsc && ng build --prod --base-href=",
     "postinstall": "npm run postinstall:electron && electron-builder install-app-deps",
     "postinstall:web": "node postinstall-web",
     "postinstall:electron": "node postinstall",
     "ng:serve": "ng serve --proxy-config proxy.conf.json",
     "electron:serve-tsc": "tsc -p tsconfig-serve.json",
     "electron:serve": "wait-on http-get://localhost:4200/ && npm run electron:serve-tsc && electron . --serve",
-    "electron:windows": "electron-packager . chat-endpoint --platform=win32 --arch=x64 --icon=./dist/chat-endpoint/favicon.ico"
+    "electron:windows": "electron-packager . endpoint --ignore=/node_modules --ignore=/e2e --ignore=/.idea --ignore=/*.ts --ignore=/*.md --ignore=/postinstall*.* --ignore=/browserslist --ignore=/.editorconfig --ignore=/src --platform=win32 --arch=x64 --icon=./dist/endpoint/favicon.ico --no-prune --overwrite",
+    "electron:windows2": "electron-builder build --windows"
   },
   "private": true,
   "dependencies": {
@@ -30,6 +32,7 @@
     "font-awesome": "4.7.0",
     "jquery": "3.4.1",
     "ngx-bootstrap": "5.2.0",
+    "ngx-electron": "2.2.0",
     "ngx-permissions": "7.0.3",
     "ngx-toastr": "11.1.2",
     "rxjs": "6.5.3",

@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macarron.chat.server.common.message.BiaMessage;
 import com.macarron.chat.server.common.message.MessageConstants;
+import com.macarron.chat.server.common.message.vo.MessageToServerChannel;
 import com.macarron.chat.server.common.server.dto.ChatServerChannelDTO;
 import com.macarron.chat.server.common.server.dto.ChatServerDTO;
 import com.macarron.chat.server.common.server.dto.ServerChannelWrapDTO;
+import com.macarron.chat.server.repository.ChatServerUserRepository;
 import com.macarron.chat.server.service.ChatServerChannelService;
 import com.macarron.chat.server.service.ChatServerService;
 import com.macarron.chat.server.service.UserMessageService;
@@ -14,6 +16,7 @@ import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -28,6 +31,7 @@ public class UserMessageServiceImpl implements UserMessageService {
 
     private UserSessionService userSessionService;
     private ChatServerService serverService;
+    private ChatServerUserRepository serverUserRepository;
     private ChatServerChannelService channelService;
 
     @Autowired
@@ -38,6 +42,11 @@ public class UserMessageServiceImpl implements UserMessageService {
     @Autowired
     public void setServerService(ChatServerService serverService) {
         this.serverService = serverService;
+    }
+
+    @Autowired
+    public void setServerUserRepository(ChatServerUserRepository serverUserRepository) {
+        this.serverUserRepository = serverUserRepository;
     }
 
     @Autowired
@@ -62,11 +71,7 @@ public class UserMessageServiceImpl implements UserMessageService {
                 break;
             }
             case MessageConstants.MessageTypes.TYPE_CHAT_TEXT: {
-                try {
-                    this.resolveChatTextMessage(session, messageData, message);
-                } catch (IOException e) {
-                    log.error("Unexpected error", e);
-                }
+                this.resolveChatTextMessage(session, messageData);
                 break;
             }
             default: {
@@ -105,16 +110,28 @@ public class UserMessageServiceImpl implements UserMessageService {
         }
     }
 
-    private void resolveChatTextMessage(WebSocketSession session, BiaMessage messageData, BinaryMessage message) throws IOException {
-        for (WebSocketSession socketSession : userSessionService.getSessions()) {
-            String userEmail = userSessionService.getSessionUser(socketSession).getUsername();
-            log.info("Send to {}", userEmail);
-            socketSession.sendMessage(message);
+    private void resolveChatTextMessage(WebSocketSession session, BiaMessage messageData) {
+        if (MessageConstants.MessageToTypes.MESSAGE_TO_SERVER_CHANNEL.equals(messageData.getMessageTo().getType())) {
+            Assert.isTrue(messageData.getMessageTo() instanceof MessageToServerChannel,
+                    "Invalid data of type " + messageData.getMessageTo().getType());
+            MessageToServerChannel toChannel = (MessageToServerChannel) messageData.getMessageTo();
+            List<String> userEmails = serverUserRepository.getUserEmailsByServerId(toChannel.getServerId());
+            for (WebSocketSession socketSession : userSessionService.getSessions()) {
+                String userEmail = userSessionService.getSessionUser(socketSession).getUsername();
+                if (userEmails.contains(userEmail)) {
+                    log.info("Send to {}", userEmail);
+                    sendMessage(socketSession, messageData);
+                }
+            }
         }
     }
 
+    /**
+     * [-27, -109, -90, -27, -109, -120]
+     */
     @Override
     public void sendMessage(WebSocketSession session, BiaMessage messageData) {
+        log.info("Write to {}", session.getId());
         try {
             byte[] dataBytes = om.writeValueAsString(messageData).getBytes();
             log.info("write bytes: {}", Arrays.toString(dataBytes));

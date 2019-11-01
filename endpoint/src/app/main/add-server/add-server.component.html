@@ -7,7 +7,7 @@
       <div class="col-3">服务器名</div>
       <div class="col-9">
         <input id="name" name="name" type="text" class="form-control form-control-sm" [(ngModel)]="server.name"
-               #name="ngModel" required popover="请输入服务器名" triggers=""
+               #name="ngModel" required maxlength="50" popover="请输入服务器名" triggers=""
                [isOpen]="name.invalid && (name.dirty || name.touched) && name.errors.required">
       </div>
     </div>

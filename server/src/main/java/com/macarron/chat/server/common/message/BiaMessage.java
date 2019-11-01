@@ -11,5 +11,6 @@ public class BiaMessage {
     private MessageFrom messageFrom;
     private MessageTo messageTo;
     private int messageType;
+    private long time;
     private byte[] message;
 }

@@ -31,3 +31,6 @@ out/
 ### VS Code ###
 .vscode/
 /endpoint/node_modules
+/endpoint/package-lock.json
+/endpoint/release
+/endpoint/dist

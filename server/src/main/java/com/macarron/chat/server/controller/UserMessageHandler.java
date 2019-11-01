@@ -41,6 +41,7 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         httpSession.setLastAccessedTime(Instant.now());
 
+        log.info("Read from {}", session.getId());
         BiaMessage messageData = readyMessage(message);
         if (messageData == null) {
             log.debug("Message is empty, skip");

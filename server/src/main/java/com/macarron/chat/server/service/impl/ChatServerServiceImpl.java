@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -191,6 +192,7 @@ public class ChatServerServiceImpl implements ChatServerService {
                 .collect(Collectors.toMap(ServerUser::getEmail, Function.identity()));
 
         BiaMessage messageData = new BiaMessage();
+        messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
         messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVERS);
         MessageFromUser fromUser = new MessageFromUser();
         fromUser.setUserId(currentUser.getId());
