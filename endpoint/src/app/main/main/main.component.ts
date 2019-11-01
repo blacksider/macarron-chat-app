@@ -9,6 +9,7 @@ import {
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVERS,
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
+  MESSAGE_TYPE_REPLY_SERVER_USER_GROUP,
   MESSAGE_TYPE_REPLY_SERVERS,
   MESSAGE_TYPE_TEXT,
   MessageFromUser,
@@ -19,6 +20,8 @@ import {BsModalRef, BsModalService} from 'ngx-bootstrap';
 import {AddServerComponent} from '../add-server/add-server.component';
 import {ServerInfoService} from '../../server/server-info.service';
 import {ServerChannelWrap} from '../../server/chat-server-channel';
+import {ServerUserGroupWrap} from '../../server/chat-server-users';
+import {ElectronService} from 'ngx-electron';
 
 @Component({
   selector: 'app-main',
@@ -34,6 +37,7 @@ export class MainComponent implements OnInit, OnDestroy {
   constructor(private wsConnService: WsConnectionService,
               private modalService: BsModalService,
               private serverInfoService: ServerInfoService,
+              private electron: ElectronService,
               private authService: AuthService) {
   }
 
@@ -49,6 +53,10 @@ export class MainComponent implements OnInit, OnDestroy {
           }
           case MESSAGE_TYPE_REPLY_SERVER_CHANNELS: {
             this.parseServerChannels(value.message);
+            break;
+          }
+          case MESSAGE_TYPE_REPLY_SERVER_USER_GROUP: {
+            this.parseServerUserGroups(value.message);
             break;
           }
           case MESSAGE_TYPE_TEXT: {
@@ -104,5 +112,10 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private parseTextMessage(value: BiaMessage) {
     this.wsConnService.addChannelMessage(value);
+  }
+
+  private parseServerUserGroups(message: number[]) {
+    const groupData = JSON.parse(byteArray2Str(message)) as ServerUserGroupWrap;
+    this.serverInfoService.appendUserGroups(groupData.serverId, groupData.userGroups);
   }
 }

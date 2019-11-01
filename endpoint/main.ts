@@ -10,22 +10,32 @@ function createWindow() {
   const size = screen.getPrimaryDisplay().workAreaSize;
 
   // Create the browser window.
-  win = new BrowserWindow({
-    x: 10,
-    y: 10,
-    width: size.width - 20,
-    height: size.height - 20,
-    webPreferences: {
-      nodeIntegration: true,
-    },
-  });
-
   if (serve) {
+    win = new BrowserWindow({
+      x: 10,
+      y: 10,
+      width: size.width - 20,
+      height: size.height - 20,
+      webPreferences: {
+        nodeIntegration: true,
+      }
+    });
     require('electron-reload')(__dirname, {
       electron: require(`${__dirname}/node_modules/electron`)
     });
     win.loadURL('http://localhost:4200');
   } else {
+    win = new BrowserWindow({
+      x: 10,
+      y: 10,
+      width: size.width - 20,
+      height: size.height - 20,
+      webPreferences: {
+        nodeIntegration: true,
+      },
+      // TODO will open later
+      // frame: false
+    });
     win.loadURL(url.format({
       pathname: path.join(__dirname, 'dist/endpoint/index.html'),
       protocol: 'file:',

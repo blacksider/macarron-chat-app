@@ -22,10 +22,13 @@
   </div>
 </div>
 <div class="content">
+  <app-title-bar></app-title-bar>
   <div class="user-label">
     <img [src]="'data:image/png;base64,' + authInfo.avatar">
     <span class="username">{{authInfo.username}}</span>
     <span class="tag">#{{authInfo.tag}}</span>
   </div>
-  <router-outlet></router-outlet>
+  <div class="route-content">
+    <router-outlet></router-outlet>
+  </div>
 </div>

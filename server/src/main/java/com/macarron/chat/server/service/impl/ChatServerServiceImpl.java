@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.socket.WebSocketSession;
@@ -60,6 +61,7 @@ public class ChatServerServiceImpl implements ChatServerService {
     private ServerUserRepository userRepository;
     private UserSessionService sessionService;
     private UserMessageService messageService;
+    private TransactionTemplate transactionTemplate;
 
     @Autowired
     public void setUserService(UserService userService) {
@@ -106,6 +108,11 @@ public class ChatServerServiceImpl implements ChatServerService {
         this.messageService = messageService;
     }
 
+    @Autowired
+    public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
+        this.transactionTemplate = transactionTemplate;
+    }
+
     private byte[] getDefaultAvatar() {
         if (bufferedDefaultAvatar != null) {
             return bufferedDefaultAvatar;
@@ -124,33 +131,37 @@ public class ChatServerServiceImpl implements ChatServerService {
     }
 
     @Override
-    @Transactional
-    public ChatServer createServer(CreateServerReqDTO req) {
-        ServerUser user = userService.getCurrentUser();
-        if (user == null) {
-            throw new MessageException("error.credentials.invalid");
+    public void createServer(CreateServerReqDTO req) {
+        ChatServer server = this.transactionTemplate.execute(status -> {
+            ServerUser user = userService.getCurrentUser();
+            if (user == null) {
+                throw new MessageException("error.credentials.invalid");
+            }
+
+            ChatServer newServer = new ChatServer();
+            newServer.setServerName(req.getName());
+            newServer.setCreateTime(Instant.now());
+            newServer.setUpdateTime(Instant.now());
+            newServer.setAvatar(getDefaultAvatar());
+            chatServerRepository.save(newServer);
+
+            ChatServerChannel defaultChannel = getDefaultChannelData(newServer);
+            serverChannelRepository.save(defaultChannel);
+
+            ChatServerUserGroup defaultGroup = getDefaultGroupData(newServer);
+            serverUserGroupRepository.save(defaultGroup);
+
+            ChatServerUser serverUser = new ChatServerUser();
+            serverUser.setUserType(ServerConstants.SERVER_USER_OWNER);
+            serverUser.setUser(user);
+            serverUser.setUserGroup(defaultGroup);
+            serverUserRepository.save(serverUser);
+
+            return newServer;
+        });
+        if (server != null) {
+            notifyServerChanges(server);
         }
-
-        ChatServer newServer = new ChatServer();
-        newServer.setServerName(req.getName());
-        newServer.setCreateTime(Instant.now());
-        newServer.setUpdateTime(Instant.now());
-        newServer.setAvatar(getDefaultAvatar());
-        chatServerRepository.save(newServer);
-
-        ChatServerChannel defaultChannel = getDefaultChannelData(newServer);
-        serverChannelRepository.save(defaultChannel);
-
-        ChatServerUserGroup defaultGroup = getDefaultGroupData(newServer);
-        serverUserGroupRepository.save(defaultGroup);
-
-        ChatServerUser serverUser = new ChatServerUser();
-        serverUser.setUserType(ServerConstants.SERVER_USER_OWNER);
-        serverUser.setUser(user);
-        serverUser.setUserGroup(defaultGroup);
-        serverUserRepository.save(serverUser);
-
-        return newServer;
     }
 
     private ChatServerChannel getDefaultChannelData(ChatServer server) {
@@ -183,11 +194,36 @@ public class ChatServerServiceImpl implements ChatServerService {
     }
 
     @Override
-    @Transactional
-    public void notifyServerChanges(ChatServer server) {
+    public void deleteServer(long id) {
         ServerUser currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            throw new MessageException("error.credentials.invalid");
+        }
+        List<ServerUser> serverUsers = this.transactionTemplate.execute(status -> {
+            ChatServerUser serverUser = serverUserRepository.getUserByServerId(id, currentUser);
+            if (serverUser == null) {
+                throw new MessageException("error.credentials.invalid");
+            }
+            if (serverUser.getUserType() != ServerConstants.SERVER_USER_OWNER) {
+                throw new MessageException("error.credentials.invalid");
+            }
 
-        List<ServerUser> serverUsers = serverUserRepository.getServerUsers(server);
+            ChatServer server = serverUser.getUserGroup().getServer();
+
+            List<ServerUser> serverUserList = serverUserRepository.getServerUsers(server);
+
+            serverUserRepository.deleteByUserGroup_Server(server);
+            serverUserGroupRepository.deleteByServer(server);
+            serverChannelRepository.deleteByServer(server);
+
+            return serverUserList;
+        });
+        if (serverUsers != null) {
+            notifyServerChanges(currentUser, serverUsers);
+        }
+    }
+
+    private void notifyServerChanges(ServerUser currentUser, List<ServerUser> serverUsers) {
         Map<String, ServerUser> emails = serverUsers.stream()
                 .collect(Collectors.toMap(ServerUser::getEmail, Function.identity()));
 
@@ -218,5 +254,13 @@ public class ChatServerServiceImpl implements ChatServerService {
                 }
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void notifyServerChanges(ChatServer server) {
+        ServerUser currentUser = userService.getCurrentUser();
+        List<ServerUser> serverUsers = serverUserRepository.getServerUsers(server);
+        notifyServerChanges(currentUser, serverUsers);
     }
 }

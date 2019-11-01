@@ -1,6 +1,7 @@
 package com.macarron.chat.server.service.impl;
 
 import com.macarron.chat.server.common.server.dto.ChatServerChannelDTO;
+import com.macarron.chat.server.common.server.dto.CreateChannelDTO;
 import com.macarron.chat.server.exception.MessageException;
 import com.macarron.chat.server.model.ChatServerChannel;
 import com.macarron.chat.server.model.ServerUser;
@@ -11,6 +12,7 @@ import com.macarron.chat.server.service.ChatServerChannelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,7 @@ public class ChatServerChannelServiceImpl implements ChatServerChannelService {
     private ChatServerChannelRepository serverChannelRepository;
     private ServerUserRepository userRepository;
     private ChatServerUserRepository serverUserRepository;
+    private TransactionTemplate transactionTemplate;
 
     @Autowired
     public void setUserRepository(ServerUserRepository userRepository) {
@@ -35,6 +38,11 @@ public class ChatServerChannelServiceImpl implements ChatServerChannelService {
     @Autowired
     public void setServerUserRepository(ChatServerUserRepository serverUserRepository) {
         this.serverUserRepository = serverUserRepository;
+    }
+
+    @Autowired
+    public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Override
@@ -54,5 +62,15 @@ public class ChatServerChannelServiceImpl implements ChatServerChannelService {
         return channels.stream()
                 .map(ChatServerChannelDTO::fromModel)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void addChannel(CreateChannelDTO req) {
+        // TODO
+    }
+
+    @Override
+    public void deleteChannel(long channelId) {
+        // TODO
     }
 }

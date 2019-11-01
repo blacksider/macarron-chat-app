@@ -5,8 +5,10 @@ import com.macarron.chat.server.model.ChatServer;
 import com.macarron.chat.server.service.ChatServerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,7 +22,11 @@ public class ChatServerController {
 
     @PostMapping("/api/server")
     void createServer(@RequestBody @Validated CreateServerReqDTO req) {
-        ChatServer server = serverService.createServer(req);
-        serverService.notifyServerChanges(server);
+        serverService.createServer(req);
+    }
+
+    @DeleteMapping("/api/server")
+    void createServer(@RequestParam long id) {
+        serverService.deleteServer(id);
     }
 }

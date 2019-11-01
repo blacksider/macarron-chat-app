@@ -42,18 +42,31 @@
     background-color: @left-bg-color;
 
     .head {
+      padding: 0 10px;
+
       h5 {
         margin: 0;
         line-height: @content-header-h;
+        white-space: nowrap;
+        overflow-x: hidden;
+        text-overflow: ellipsis;
       }
     }
 
     .body {
-      padding: 5px;
+      padding-top: 5px;
+      padding-right: 5px;
+      padding-left: 5px;
+
       .channel {
         padding: 5px 10px;
         cursor: pointer;
         border-radius: 4px;
+        white-space: nowrap;
+        overflow-x: hidden;
+        text-overflow: ellipsis;
+        height: 40px;
+        line-height: 30px;
 
         &.active {
           background-color: lighten(@left-bg-color, 10%);
@@ -63,10 +76,29 @@
           background-color: lighten(@left-bg-color, 15%);
         }
       }
+
+      .add-channel {
+        height: 40px;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-top: 10px;
+        padding: 5px 10px;
+        background-color: lighten(@left-bg-color, 10%);
+
+        i {
+          font-size: 18px;
+          float: right;
+          margin-top: 6px;
+        }
+
+        &:hover {
+          background-color: lighten(@left-bg-color, 15%);
+        }
+      }
     }
   }
 
-  .container-right {
+  .container-middle {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -100,7 +132,7 @@
 
         .message-from {
           .user {
-            font-size:18px;
+            font-size: 18px;
             font-style: italic;
             color: cornflowerblue;
             padding-right: 5px;
@@ -140,6 +172,93 @@
 
       .buttons {
         padding: 5px 0;
+      }
+    }
+  }
+
+
+  .container-right {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    background-color: @left-bg-color;
+    padding: 10px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #aaaaaa;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .user-group {
+      padding: 10px;
+      border-radius: 4px;
+      background-color: lighten(@left-bg-color, 10%);
+      white-space: nowrap;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .group-users {
+      margin-top: 5px;
+      padding: 0 10px;
+    }
+
+    .group-user {
+      padding: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+      border-radius: 4px;
+
+      .username {
+        font-size: 15px;
+        font-weight: bolder;
+      }
+
+      img {
+        width: 30px;
+        padding: 4px;
+        border-radius: 15px;
+        background-color: @left-bg-color;
+        margin-right: 5px;
+      }
+
+      &:hover {
+        background-color: lighten(@left-bg-color, 15%);
+      }
+    }
+
+    .add-user-group {
+      height: 40px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: lighten(@left-bg-color, 10%);
+
+      i {
+        font-size: 18px;
+        float: right;
+        margin-top: 6px;
+      }
+
+      &:hover {
+        background-color: lighten(@left-bg-color, 15%);
       }
     }
   }

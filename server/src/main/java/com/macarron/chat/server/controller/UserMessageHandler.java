@@ -37,7 +37,7 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
-        // update session
+        // update session timeout
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         httpSession.setLastAccessedTime(Instant.now());
 

@@ -3,13 +3,14 @@ import {ServerInfoService} from '../server-info.service';
 import {ActivatedRoute} from '@angular/router';
 import {ChatServerChannel} from '../chat-server-channel';
 import {ChatServer} from '../chat-server';
-import {BiaMessageWebsocketSubject, byteArray2Str, strToUtf8Bytes, utf8ByteToUnicodeStr} from '../../main/bia-message-websocket-subject';
+import {BiaMessageWebsocketSubject, byteArray2Str, strToUtf8Bytes} from '../../main/bia-message-websocket-subject';
 import {
   BiaMessage,
   MESSAGE_FROM_USER,
   MESSAGE_TO_SERVER_CHANNEL,
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVER_CHANNELS,
+  MESSAGE_TYPE_GET_SERVER_USER_GROUP,
   MESSAGE_TYPE_TEXT,
   MessageFromUser,
   MessageToServerChannel,
@@ -20,6 +21,7 @@ import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
+import {ChatServerUserGroup} from '../chat-server-users';
 
 @Component({
   selector: 'app-server-info',
@@ -32,6 +34,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   serverInfo: ChatServer;
   channels: ChatServerChannel[];
+  userGroups: ChatServerUserGroup[];
   currentChannel: ChatServerChannel;
   connected = false;
   authInfo: AuthInfo;
@@ -52,6 +55,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         this.unSubscribe.complete();
         this.unSubscribe = null;
       }
+      this.channels = null;
+      this.userGroups = null;
       this.currentChannel = null;
       this.connected = false;
       this.channelMessages = null;
@@ -75,6 +80,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             this.connectTo(this.channels[0]);
           }
         });
+      this.svrService.getUserGroups(serverId)
+        .pipe(
+          takeUntil(this.unSubscribe)
+        )
+        .subscribe(value => {
+          this.userGroups = value;
+        });
       this.connService.isReady()
         .pipe(
           takeUntil(this.unSubscribe)
@@ -82,19 +94,31 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         .subscribe(ready => {
           if (ready) {
             this.globalSocketSubject = this.connService.getGlobalSocketSubject();
+            const fromMe = {
+              type: MESSAGE_FROM_USER,
+              userId: this.authInfo.userId,
+              username: this.authInfo.username
+            } as MessageFromUser;
+
+            const toMe = {
+              type: MESSAGE_TO_USER,
+              userId: this.authInfo.userId,
+              username: this.authInfo.username
+            } as MessageToUser;
+
             this.globalSocketSubject.send({
-              messageFrom: {
-                type: MESSAGE_FROM_USER,
-                userId: this.authInfo.userId,
-                username: this.authInfo.username
-              } as MessageFromUser,
-              messageTo: {
-                type: MESSAGE_TO_USER,
-                userId: this.authInfo.userId,
-                username: this.authInfo.username
-              } as MessageToUser,
+              messageFrom: fromMe,
+              messageTo: toMe,
               time: new Date().getTime(),
               messageType: MESSAGE_TYPE_GET_SERVER_CHANNELS,
+              message: strToUtf8Bytes(serverId + '')
+            } as BiaMessage);
+
+            this.globalSocketSubject.send({
+              messageFrom: fromMe,
+              messageTo: toMe,
+              time: new Date().getTime(),
+              messageType: MESSAGE_TYPE_GET_SERVER_USER_GROUP,
               message: strToUtf8Bytes(serverId + '')
             } as BiaMessage);
           }
@@ -134,7 +158,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   isInChannel(channel: ChatServerChannel) {
-    return this.currentChannel === channel;
+    return this.currentChannel.id === channel.id;
   }
 
   sendMessage() {

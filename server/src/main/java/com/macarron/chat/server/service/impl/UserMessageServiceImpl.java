@@ -7,20 +7,27 @@ import com.macarron.chat.server.common.message.MessageConstants;
 import com.macarron.chat.server.common.message.vo.MessageToServerChannel;
 import com.macarron.chat.server.common.server.dto.ChatServerChannelDTO;
 import com.macarron.chat.server.common.server.dto.ChatServerDTO;
+import com.macarron.chat.server.common.server.dto.ChatServerUserGroupDTO;
 import com.macarron.chat.server.common.server.dto.ServerChannelWrapDTO;
+import com.macarron.chat.server.common.server.dto.ServerUserGroupWrapDTO;
+import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
 import com.macarron.chat.server.repository.ChatServerUserRepository;
 import com.macarron.chat.server.service.ChatServerChannelService;
 import com.macarron.chat.server.service.ChatServerService;
+import com.macarron.chat.server.service.ChatServerUserService;
 import com.macarron.chat.server.service.UserMessageService;
 import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -33,6 +40,7 @@ public class UserMessageServiceImpl implements UserMessageService {
     private ChatServerService serverService;
     private ChatServerUserRepository serverUserRepository;
     private ChatServerChannelService channelService;
+    private ChatServerUserService serverUserService;
 
     @Autowired
     public void setUserSessionService(UserSessionService userSessionService) {
@@ -54,6 +62,11 @@ public class UserMessageServiceImpl implements UserMessageService {
         this.channelService = channelService;
     }
 
+    @Autowired
+    public void setServerUserService(ChatServerUserService serverUserService) {
+        this.serverUserService = serverUserService;
+    }
+
     @Override
     public void handleMessage(WebSocketSession session,
                               BiaMessage messageData,
@@ -68,6 +81,7 @@ public class UserMessageServiceImpl implements UserMessageService {
                 break;
             }
             case MessageConstants.MessageTypes.TYPE_GET_SERVER_USER_GROUP: {
+                this.resolveGetServerUserGroup(session, messageData);
                 break;
             }
             case MessageConstants.MessageTypes.TYPE_CHAT_TEXT: {
@@ -81,6 +95,22 @@ public class UserMessageServiceImpl implements UserMessageService {
         }
     }
 
+    private void resolveGetServerUserGroup(WebSocketSession session, BiaMessage messageData) {
+        String userEmail = userSessionService.getSessionUser(session).getUsername();
+        long serverId = Long.parseLong(new String(messageData.getMessage()));
+        List<ChatServerUserGroupDTO> userGroups = this.serverUserService.getServerUserGroups(serverId, userEmail);
+        ServerUserGroupWrapDTO data = new ServerUserGroupWrapDTO(serverId, userGroups);
+        try {
+            byte[] messageBytes = om.writeValueAsString(data).getBytes();
+            messageData.setMessage(messageBytes);
+            messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
+            messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVER_USER_GROUP);
+            sendMessage(session, messageData);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse data of user group list", e);
+        }
+    }
+
     private void resolveGetServerChannels(WebSocketSession session, BiaMessage messageData) {
         String userEmail = userSessionService.getSessionUser(session).getUsername();
         long serverId = Long.parseLong(new String(messageData.getMessage()));
@@ -89,12 +119,12 @@ public class UserMessageServiceImpl implements UserMessageService {
         try {
             byte[] messageBytes = om.writeValueAsString(data).getBytes();
             messageData.setMessage(messageBytes);
+            messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
             messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVER_CHANNELS);
             sendMessage(session, messageData);
         } catch (JsonProcessingException e) {
             log.error("Failed to parse data of channel list", e);
         }
-
     }
 
     private void resolveGetServers(WebSocketSession session, BiaMessage messageData) {
@@ -103,6 +133,7 @@ public class UserMessageServiceImpl implements UserMessageService {
         try {
             byte[] serversBytes = om.writeValueAsString(servers).getBytes();
             messageData.setMessage(serversBytes);
+            messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
             messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVERS);
             sendMessage(session, messageData);
         } catch (JsonProcessingException e) {
@@ -126,11 +157,12 @@ public class UserMessageServiceImpl implements UserMessageService {
         }
     }
 
-    /**
-     * [-27, -109, -90, -27, -109, -120]
-     */
     @Override
     public void sendMessage(WebSocketSession session, BiaMessage messageData) {
+        // update session timeout
+        Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
+        httpSession.setLastAccessedTime(Instant.now());
+
         log.info("Write to {}", session.getId());
         try {
             byte[] dataBytes = om.writeValueAsString(messageData).getBytes();

@@ -1,0 +1,7 @@
+<div class="title-bar">
+  <div class="icon-minimize" id="icon-minimize" (click)="minimizeWindow()"><i class="fa fa-window-minimize"></i></div>
+  <div class="icon-maximize" id="icon-maximize" (click)="maximizeWindow()">
+    <i class="fa" [ngClass]="{'fa-window-maximize': !max, 'fa-window-restore': max}"></i>
+  </div>
+  <div class="icon-remove" id="icon-remove" (click)="closeWindow()"><i class="fa fa-remove"></i></div>
+</div>

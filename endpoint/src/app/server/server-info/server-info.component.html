@@ -9,9 +9,12 @@
            [ngClass]="{'active': isInChannel(room)}">
         <span>{{room.channelName}}</span>
       </div>
+      <div class="add-channel">
+        <span>添加频道</span>&nbsp;<i class="fa fa-plus-square"></i>
+      </div>
     </div>
   </div>
-  <div class="container-right">
+  <div class="container-middle">
     <div class="messages" #messageContainer>
       <div *ngFor="let msg of channelMessages">
         <div class="message">
@@ -33,6 +36,22 @@
                 (click)="sendMessage()">&nbsp;&nbsp;发送&nbsp;&nbsp;
         </button>
       </div>
+    </div>
+  </div>
+  <div class="container-right">
+    <div *ngFor="let group of userGroups">
+      <div class="user-group">{{group.groupName}}</div>
+      <div class="group-users">
+        <div *ngFor="let user of group.users">
+          <div class="group-user">
+            <img [src]="'data:image/png;base64,' + user.user.avatar">
+            <span class="username">{{user.user.username}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="add-user-group">
+      <span>添加用户组</span>&nbsp;<i class="fa fa-plus-square"></i>
     </div>
   </div>
 </div>

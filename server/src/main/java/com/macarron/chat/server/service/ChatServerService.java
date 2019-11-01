@@ -7,9 +7,11 @@ import com.macarron.chat.server.model.ChatServer;
 import java.util.List;
 
 public interface ChatServerService {
-    ChatServer createServer(CreateServerReqDTO req);
+    void createServer(CreateServerReqDTO req);
 
     List<ChatServerDTO> getServers(String userIdentifier);
 
     void notifyServerChanges(ChatServer server);
+
+    void deleteServer(long id);
 }

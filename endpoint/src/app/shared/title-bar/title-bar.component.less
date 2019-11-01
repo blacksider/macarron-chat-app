@@ -1,0 +1,33 @@
+@sidebar-bg-color: #393836;
+@left-bg-color: lighten(@sidebar-bg-color, 10%);
+
+.title-bar {
+  position: fixed;
+  top: 0;
+  height: 30px;
+  width: 100%;
+  background-color: darken(@left-bg-color, 10%);
+  -webkit-user-select: none;
+  -webkit-app-region: drag;
+
+  .icon-minimize {
+    display: inline-block;
+    position: absolute;
+    right: 130px;
+    cursor: pointer;
+  }
+
+  .icon-maximize {
+    display: inline-block;
+    position: absolute;
+    right: 100px;
+    cursor: pointer;
+  }
+
+  .icon-remove {
+    display: inline-block;
+    position: absolute;
+    right: 70px;
+    cursor: pointer;
+  }
+}
