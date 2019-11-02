@@ -4,6 +4,8 @@ import {ChatServerChannel} from './chat-server-channel';
 import {merge, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {ChatServerUserGroup} from './chat-server-users';
+import {HttpClient} from '@angular/common/http';
+import {environment} from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +18,7 @@ export class ServerInfoService {
   private serverUserGroups: Map<number, ChatServerUserGroup[]>;
   private serverUserGroupsChange = new EventEmitter<Map<number, ChatServerUserGroup[]>>();
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.servers = [];
     this.serverChannels = new Map<number, ChatServerChannel[]>();
     this.serverUserGroups = new Map<number, ChatServerUserGroup[]>();
@@ -91,5 +93,13 @@ export class ServerInfoService {
       return merge(of(this.serverUserGroups.get(serverId)), changeObv);
     }
     return changeObv;
+  }
+
+  deleteChannel(id: number): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/api/server/channel?id=${id}`);
+  }
+
+  deleteUserGroup(id: number): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/api/server/user-group?id=${id}`);
   }
 }

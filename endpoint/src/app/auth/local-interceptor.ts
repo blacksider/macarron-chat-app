@@ -56,6 +56,9 @@ export class LocalInterceptor implements HttpInterceptor {
           case 403:
             this.toastr.error('用户无权限');
             break;
+          case 504:
+            this.toastr.error('服务器连接异常');
+            break;
           default:
             this.toastr.error('未知错误');
             break;

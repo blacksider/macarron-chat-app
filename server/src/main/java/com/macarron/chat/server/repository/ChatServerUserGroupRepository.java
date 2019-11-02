@@ -10,4 +10,8 @@ public interface ChatServerUserGroupRepository extends JpaRepository<ChatServerU
     List<ChatServerUserGroup> findByServer_Id(long serverId);
 
     void deleteByServer(final ChatServer server);
+
+    boolean existsByServerAndGroupName(final ChatServer server, final String name);
+
+    long countByServer(ChatServer server);
 }

@@ -3,6 +3,8 @@
 @import '~font-awesome/css/font-awesome.min.css';
 @import "~ngx-toastr/toastr.css";
 
+@server-name-menu-bg: #393836;
+
 html, body {
   height: 100%;
 }
@@ -42,5 +44,60 @@ body {
 
   .icon-remove {
     right: 10px !important;
+  }
+}
+
+.server-name-dropdown {
+  width: 250px;
+  margin-left: 48px;
+  background-color: @server-name-menu-bg;
+
+  .dropdown-item {
+    color: #fff;
+
+    &:hover, &:focus {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
+
+    &:active, &.active {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
+  }
+}
+
+.channel-name-dropdown {
+  width: 250px;
+  margin-left: 40px;
+  background-color: @server-name-menu-bg;
+
+  .dropdown-item {
+    color: #fff;
+
+    &:hover, &:focus {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
+
+    &:active, &.active {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
+  }
+}
+
+
+.user-group-name-dropdown {
+  width: 250px;
+  margin-left: 30px;
+  background-color: @server-name-menu-bg;
+
+  .dropdown-item {
+    color: #fff;
+
+    &:hover, &:focus {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
+
+    &:active, &.active {
+      background-color: lighten(@server-name-menu-bg, 5%);
+    }
   }
 }

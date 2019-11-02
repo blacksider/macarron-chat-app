@@ -1,0 +1,19 @@
+<form novalidate autocomplete="off" #form="ngForm">
+  <div class="modal-header">
+    <b class="modal-title pull-left">添加组</b>
+  </div>
+  <div class="modal-body">
+    <div class="form-group row">
+      <div class="col-3">组名</div>
+      <div class="col-9">
+        <input id="name" name="name" type="text" class="form-control form-control-sm" [(ngModel)]="req.groupName"
+               #name="ngModel" required maxlength="50" popover="请输入组名" triggers=""
+               [isOpen]="name.invalid && (name.dirty || name.touched) && name.errors.required">
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary btn-sm" (click)="confirm()">确定</button>
+    <button type="button" class="btn btn-warning btn-sm" (click)="close()">关闭</button>
+  </div>
+</form>

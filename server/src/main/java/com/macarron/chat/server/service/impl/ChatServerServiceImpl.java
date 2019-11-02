@@ -3,6 +3,7 @@ package com.macarron.chat.server.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macarron.chat.server.common.message.BiaMessage;
+import com.macarron.chat.server.common.message.MessageBuilder;
 import com.macarron.chat.server.common.message.MessageConstants;
 import com.macarron.chat.server.common.message.vo.MessageFromUser;
 import com.macarron.chat.server.common.message.vo.MessageToUser;
@@ -230,9 +231,7 @@ public class ChatServerServiceImpl implements ChatServerService {
         BiaMessage messageData = new BiaMessage();
         messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
         messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVERS);
-        MessageFromUser fromUser = new MessageFromUser();
-        fromUser.setUserId(currentUser.getId());
-        fromUser.setUsername(currentUser.getUsername());
+        MessageFromUser fromUser = MessageBuilder.buildFromUser(currentUser);
         messageData.setMessageFrom(fromUser);
         for (WebSocketSession session : sessionService.getSessions()) {
             String userEmail = sessionService.getSessionUser(session).getUsername();
@@ -262,5 +261,30 @@ public class ChatServerServiceImpl implements ChatServerService {
         ServerUser currentUser = userService.getCurrentUser();
         List<ServerUser> serverUsers = serverUserRepository.getServerUsers(server);
         notifyServerChanges(currentUser, serverUsers);
+    }
+
+    @Override
+    @Transactional
+    public void validateServerUser(long serverId, String email) {
+        Optional<ServerUser> userOpt = userRepository.findByEmail(email);
+        if (!userOpt.isPresent()) {
+            // TODO
+            throw new MessageException("error.credentials.invalid");
+        }
+        long count = serverUserRepository.countByUserEmailAndUserGroupServerId(email, serverId);
+        if (count == 0) {
+            // TODO
+            throw new MessageException("error.credentials.invalid");
+        }
+    }
+
+    @Override
+    @Transactional
+    public ChatServerUser validateUserIsOwnerAndGet(long severId, ServerUser user) {
+        ChatServerUser serverUser = serverUserRepository.getUserByServerId(severId, user);
+        if (serverUser == null || serverUser.getUserType() != ServerConstants.SERVER_USER_OWNER) {
+            return null;
+        }
+        return serverUser;
     }
 }

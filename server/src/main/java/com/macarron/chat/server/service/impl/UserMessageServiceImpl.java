@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macarron.chat.server.common.message.BiaMessage;
 import com.macarron.chat.server.common.message.MessageConstants;
 import com.macarron.chat.server.common.message.vo.MessageToServerChannel;
+import com.macarron.chat.server.common.message.vo.MessageToUser;
 import com.macarron.chat.server.common.server.dto.ChatServerChannelDTO;
 import com.macarron.chat.server.common.server.dto.ChatServerDTO;
 import com.macarron.chat.server.common.server.dto.ChatServerUserGroupDTO;
 import com.macarron.chat.server.common.server.dto.ServerChannelWrapDTO;
 import com.macarron.chat.server.common.server.dto.ServerUserGroupWrapDTO;
 import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
+import com.macarron.chat.server.model.ServerUser;
 import com.macarron.chat.server.repository.ChatServerUserRepository;
 import com.macarron.chat.server.service.ChatServerChannelService;
 import com.macarron.chat.server.service.ChatServerService;
@@ -30,6 +32,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -41,6 +44,7 @@ public class UserMessageServiceImpl implements UserMessageService {
     private ChatServerUserRepository serverUserRepository;
     private ChatServerChannelService channelService;
     private ChatServerUserService serverUserService;
+    private UserSessionService sessionService;
 
     @Autowired
     public void setUserSessionService(UserSessionService userSessionService) {
@@ -65,6 +69,11 @@ public class UserMessageServiceImpl implements UserMessageService {
     @Autowired
     public void setServerUserService(ChatServerUserService serverUserService) {
         this.serverUserService = serverUserService;
+    }
+
+    @Autowired
+    public void setSessionService(UserSessionService sessionService) {
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -172,6 +181,23 @@ public class UserMessageServiceImpl implements UserMessageService {
             log.error("Failed to parse message data", e);
         } catch (IOException e) {
             log.error("Failed to send data of server list", e);
+        }
+    }
+
+    @Override
+    public void sendMessageBelongsTO(BiaMessage messageData, Map<String, ServerUser> emails) {
+        for (WebSocketSession socketSession : sessionService.getSessions()) {
+            String userEmail = sessionService.getSessionUser(socketSession).getUsername();
+            if (emails.containsKey(userEmail)) {
+                ServerUser emailMappedUser = emails.get(userEmail);
+
+                MessageToUser toUser = new MessageToUser();
+                toUser.setUserId(emailMappedUser.getId());
+                toUser.setUsername(emailMappedUser.getUsername());
+                messageData.setMessageTo(toUser);
+
+                sendMessage(socketSession, messageData);
+            }
         }
     }
 }

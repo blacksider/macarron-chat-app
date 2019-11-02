@@ -10,4 +10,8 @@ public interface ChatServerChannelRepository extends JpaRepository<ChatServerCha
     List<ChatServerChannel> findByServer_Id(long serverId);
 
     void deleteByServer(final ChatServer server);
+
+    boolean existsByServerAndChannelName(final ChatServer server, String name);
+
+    long countByServer(final ChatServer server);
 }

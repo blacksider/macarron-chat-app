@@ -22,6 +22,19 @@ import {AuthInfo} from '../../auth/auth-info';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {ChatServerUserGroup} from '../chat-server-users';
+import {BsModalRef, BsModalService} from 'ngx-bootstrap';
+import {AddChannelComponent} from '../add-channel/add-channel.component';
+import {AddUserGroupComponent} from '../add-user-group/add-user-group.component';
+import {ConfirmService} from '../../shared/confirm/confirm.service';
+import {ToastrService} from 'ngx-toastr';
+
+const KEYCODE_ENTER = 'Enter';
+const KEYCODE_Shift = 'ShiftLeft';
+
+class KeyDownData {
+  code: string;
+  time: Date;
+}
 
 @Component({
   selector: 'app-server-info',
@@ -41,10 +54,17 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   unSubscribe: Subject<any>;
   channelMessageSub: any;
   channelMessages: BiaMessage[];
+  lastPressedKey: KeyDownData;
+  delta = 500;
+  addChannelModalRef: BsModalRef;
+  addGroupModalRef: BsModalRef;
 
   constructor(private svrService: ServerInfoService,
               private connService: WsConnectionService,
+              private modalService: BsModalService,
               private route: ActivatedRoute,
+              private confirm: ConfirmService,
+              private toastr: ToastrService,
               private authService: AuthService) {
   }
 
@@ -131,6 +151,12 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       this.unSubscribe.next();
       this.unSubscribe.complete();
     }
+    if (this.addChannelModalRef) {
+      this.addChannelModalRef.hide();
+    }
+    if (this.addGroupModalRef) {
+      this.addGroupModalRef.hide();
+    }
   }
 
   parseTextMessage(message: number[]) {
@@ -141,6 +167,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     if (!!this.currentChannel && this.currentChannel.id === channel.id) {
       return;
     }
+    this.channelMessages = null;
     this.currentChannel = channel;
     this.connected = true;
     if (this.channelMessageSub) {
@@ -162,6 +189,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   sendMessage() {
+    const message = this.inputMsgControl.nativeElement.value;
+    if (!message) {
+      return;
+    }
     this.globalSocketSubject.send({
       messageFrom: {
         type: MESSAGE_FROM_USER,
@@ -178,5 +209,77 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       message: strToUtf8Bytes(this.inputMsgControl.nativeElement.value)
     } as BiaMessage);
     this.inputMsgControl.nativeElement.value = '';
+  }
+
+  keyDown($event: KeyboardEvent) {
+    if (!this.lastPressedKey) {
+      this.lastPressedKey = {
+        code: $event.code,
+        time: new Date()
+      };
+      return;
+    }
+    const code = $event.code;
+    const now = new Date();
+
+    if (code === KEYCODE_ENTER) {
+      if (this.lastPressedKey.code === KEYCODE_Shift) {
+        if (now.getTime() - this.lastPressedKey.time.getTime() <= this.delta) {
+          $event.preventDefault();
+          this.sendMessage();
+        }
+      }
+    }
+
+    this.lastPressedKey = {
+      code: code,
+      time: now
+    };
+  }
+
+  addChannel() {
+    if (!this.serverInfo) {
+      return;
+    }
+    const initialState = {
+      serverId: this.serverInfo.id
+    };
+    this.addChannelModalRef = this.modalService.show(AddChannelComponent, {class: 'modal-dialog-centered', initialState});
+  }
+
+  addUserGroup() {
+    if (!this.serverInfo) {
+      return;
+    }
+    const initialState = {
+      serverId: this.serverInfo.id
+    };
+    this.addGroupModalRef = this.modalService.show(AddUserGroupComponent, {class: 'modal-dialog-centered', initialState});
+  }
+
+  deleteChannel(id: number) {
+    this.confirm.confirm({
+      title: '警告',
+      message: '确定删除该频道？'
+    }).subscribe(ok => {
+      if (ok) {
+        this.svrService.deleteChannel(id).subscribe(_ => {
+          this.toastr.success('删除成功');
+        });
+      }
+    });
+  }
+
+  deleteUserGroup(id: number) {
+    this.confirm.confirm({
+      title: '警告',
+      message: '确定删除该组？'
+    }).subscribe(ok => {
+      if (ok) {
+        this.svrService.deleteUserGroup(id).subscribe(_ => {
+          this.toastr.success('删除成功');
+        });
+      }
+    });
   }
 }

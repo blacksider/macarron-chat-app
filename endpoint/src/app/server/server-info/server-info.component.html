@@ -1,15 +1,32 @@
 <div class="main-container">
   <div class="container-left">
-    <div class="head">
-      <h5 class="text-center">{{serverInfo ? serverInfo.serverName : ''}}</h5>
+    <div class="head" dropdown container="body" [autoClose]="true">
+      <div class="server-name" dropdownToggle>
+        <h5 class="text-center">
+          {{serverInfo ? serverInfo.serverName : ''}}
+        </h5>
+        <i class="fa fa-caret-down"></i>
+      </div>
+      <ul *dropdownMenu class="dropdown-menu server-name-dropdown" role="menu">
+        <li role="menuitem"><a class="dropdown-item" href="javascript:;">设置</a></li>
+        <li role="menuitem"><a class="dropdown-item" href="javascript:;">退出服务器</a></li>
+      </ul>
     </div>
     <div class="body">
-      <div class="channel" *ngFor="let room of channels"
-           (click)="connectTo(room)"
-           [ngClass]="{'active': isInChannel(room)}">
-        <span>{{room.channelName}}</span>
+      <div *ngFor="let room of channels">
+        <div class="channel" dropdown container="body" [autoClose]="true"
+             [ngClass]="{'active': isInChannel(room)}">
+          <div class="channel-name">
+            <span (click)="connectTo(room)">{{room.channelName}}</span>
+            <i class="fa fa-gear" dropdownToggle></i>
+          </div>
+          <ul *dropdownMenu class="dropdown-menu channel-name-dropdown" role="menu">
+            <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteChannel(room.id)">删除</a></li>
+          </ul>
+        </div>
       </div>
-      <div class="add-channel">
+
+      <div class="add-channel" (click)="addChannel()">
         <span>添加频道</span>&nbsp;<i class="fa fa-plus-square"></i>
       </div>
     </div>
@@ -29,18 +46,27 @@
       </div>
     </div>
     <div class="input">
-      <textarea placeholder="输入消息" #inputMsg [disabled]="!connected"></textarea>
+      <textarea placeholder="输入消息" #inputMsg [disabled]="!connected" (keydown)="keyDown($event)"></textarea>
       <div class="buttons">
         <button type="button" class="btn btn-primary btn-sm float-right"
                 [disabled]="!connected"
                 (click)="sendMessage()">&nbsp;&nbsp;发送&nbsp;&nbsp;
         </button>
+        <span class="enter-warning float-right">按左Shift+Enter快捷发送</span>
       </div>
     </div>
   </div>
   <div class="container-right">
-    <div *ngFor="let group of userGroups">
-      <div class="user-group">{{group.groupName}}</div>
+    <div *ngFor="let group of userGroups" class="margin-bottom-5">
+      <div class="user-group" dropdown container="body" [autoClose]="true">
+        <div class="user-group-name">
+          <span>{{group.groupName}}</span>
+          <i class="fa fa-gear" dropdownToggle></i>
+        </div>
+        <ul *dropdownMenu class="dropdown-menu user-group-name-dropdown" role="menu">
+          <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteUserGroup(group.id)">删除</a></li>
+        </ul>
+      </div>
       <div class="group-users">
         <div *ngFor="let user of group.users">
           <div class="group-user">
@@ -50,7 +76,7 @@
         </div>
       </div>
     </div>
-    <div class="add-user-group">
+    <div class="add-user-group" (click)="addUserGroup()">
       <span>添加用户组</span>&nbsp;<i class="fa fa-plus-square"></i>
     </div>
   </div>
