@@ -35,6 +35,8 @@ export const MESSAGE_TYPE_GET_SERVER_CHANNELS = 2010;
 export const MESSAGE_TYPE_REPLY_SERVER_CHANNELS = 2011;
 export const MESSAGE_TYPE_GET_SERVER_USER_GROUP = 2020;
 export const MESSAGE_TYPE_REPLY_SERVER_USER_GROUP = 2021;
+export const MESSAGE_TYPE_SERVER_INVITE = 3000;
+export const MESSAGE_TYPE_ON_VOICE_RTC_CONN = 4000;
 
 export class BiaMessage {
   messageFrom: MessageFrom;

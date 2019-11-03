@@ -1,19 +1,19 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {CreateChannelReq} from './create-channel-req';
-import {NgForm} from '@angular/forms';
+import {NgForm, NgModel} from '@angular/forms';
 import {BsModalRef} from 'ngx-bootstrap';
 import {ToastrService} from 'ngx-toastr';
+import {InviteUser} from './invite-user';
 import {ServerInfoService} from '../server-info.service';
 
 @Component({
-  selector: 'app-add-channel',
-  templateUrl: './add-channel.component.html',
-  styleUrls: ['./add-channel.component.less']
+  selector: 'app-invite-user',
+  templateUrl: './invite-user.component.html',
+  styleUrls: ['./invite-user.component.less']
 })
-export class AddChannelComponent implements OnInit {
+export class InviteUserComponent implements OnInit {
   @ViewChild('form', {static: true}) form: NgForm;
   serverId: number;
-  req: CreateChannelReq;
+  req: InviteUser;
 
   constructor(public bsModalRef: BsModalRef,
               private toastr: ToastrService,
@@ -21,7 +21,7 @@ export class AddChannelComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.req = new CreateChannelReq();
+    this.req = new InviteUser();
     this.req.serverId = this.serverId;
   }
 
@@ -36,11 +36,20 @@ export class AddChannelComponent implements OnInit {
       });
       return;
     }
-    this.svrService.addChannel(this.req).subscribe(_ => {
-      this.toastr.success('创建成功').onShown.subscribe(() => {
+    this.svrService.inviteUser(this.req).subscribe(_ => {
+      this.toastr.success('邀请已发送').onShown.subscribe(() => {
         this.close();
       });
     });
   }
 
+  getErrorMsg(name: NgModel) {
+    if (name.invalid && (name.dirty || name.touched)) {
+      if (name.errors.required) {
+        return '请输入用户';
+      } else {
+        return '请输入正确的格式';
+      }
+    }
+  }
 }

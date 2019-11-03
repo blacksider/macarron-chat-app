@@ -1,0 +1,24 @@
+<form novalidate autocomplete="off" #form="ngForm">
+  <div class="modal-header">
+    <b class="modal-title pull-left">邀请</b>
+  </div>
+  <div class="modal-body">
+    <div class="form-group row">
+      <div class="col-3">用户</div>
+      <div class="col-9">
+        <input id="name" name="name" type="text" class="form-control form-control-sm" [(ngModel)]="req.toUser"
+               #name="ngModel" required maxlength="50" [popover]="warning" triggers=""
+               pattern="[\s\S]*#[\d]{4}"
+               [isOpen]="name.invalid && (name.dirty || name.touched)">
+        <span>格式：用户名#标签（例如Macarron#1000）</span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary btn-sm" (click)="confirm()">确定</button>
+    <button type="button" class="btn btn-warning btn-sm" (click)="close()">关闭</button>
+  </div>
+</form>
+<ng-template #warning>
+  <span>{{getErrorMsg(name)}}</span>
+</ng-template>

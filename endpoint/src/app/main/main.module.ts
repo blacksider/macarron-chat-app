@@ -6,16 +6,17 @@ import {FormsModule} from '@angular/forms';
 import {MainDetailComponent} from './main-detail/main-detail.component';
 import {SettingComponent} from './setting/setting.component';
 import {SharedModule} from '../shared/shared.module';
-import {WsConnectionService} from './ws-connection.service';
 import {AddServerComponent} from './add-server/add-server.component';
 import {PopoverModule} from 'ngx-bootstrap';
+import {UserMessagesComponent} from './user-messages/user-messages.component';
 
 @NgModule({
   declarations: [
     MainComponent,
     MainDetailComponent,
     SettingComponent,
-    AddServerComponent
+    AddServerComponent,
+    UserMessagesComponent
   ],
   imports: [
     CommonModule,
@@ -27,9 +28,7 @@ import {PopoverModule} from 'ngx-bootstrap';
   entryComponents: [
     AddServerComponent
   ],
-  providers: [
-    WsConnectionService
-  ]
+  providers: []
 })
 export class MainModule {
 }

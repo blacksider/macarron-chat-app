@@ -11,6 +11,7 @@ import {
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
   MESSAGE_TYPE_REPLY_SERVER_USER_GROUP,
   MESSAGE_TYPE_REPLY_SERVERS,
+  MESSAGE_TYPE_SERVER_INVITE,
   MESSAGE_TYPE_TEXT,
   MessageFromUser,
   MessageToUser
@@ -22,6 +23,7 @@ import {ServerInfoService} from '../../server/server-info.service';
 import {ServerChannelWrap} from '../../server/chat-server-channel';
 import {ServerUserGroupWrap} from '../../server/chat-server-users';
 import {ElectronService} from 'ngx-electron';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-main',
@@ -38,6 +40,7 @@ export class MainComponent implements OnInit, OnDestroy {
               private modalService: BsModalService,
               private serverInfoService: ServerInfoService,
               private electron: ElectronService,
+              private router: Router,
               private authService: AuthService) {
   }
 
@@ -63,6 +66,10 @@ export class MainComponent implements OnInit, OnDestroy {
             this.parseTextMessage(value);
             break;
           }
+          case MESSAGE_TYPE_SERVER_INVITE: {
+            this.parseInviteToServerMessage(value);
+            break;
+          }
           default: {
             break;
           }
@@ -85,6 +92,9 @@ export class MainComponent implements OnInit, OnDestroy {
       } as BiaMessage);
     });
     this.serverInfoService.getServers().subscribe(value => {
+      if (!value || value.length === 0) {
+        this.router.navigate(['/app/main/setting']);
+      }
       this.servers = value;
     });
   }
@@ -117,5 +127,9 @@ export class MainComponent implements OnInit, OnDestroy {
   private parseServerUserGroups(message: number[]) {
     const groupData = JSON.parse(byteArray2Str(message)) as ServerUserGroupWrap;
     this.serverInfoService.appendUserGroups(groupData.serverId, groupData.userGroups);
+  }
+
+  private parseInviteToServerMessage(value: BiaMessage) {
+    this.wsConnService.addFromUserMessage(value);
   }
 }

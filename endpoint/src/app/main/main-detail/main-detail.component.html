@@ -6,6 +6,15 @@
           <i class="fa fa-gears"></i>&nbsp;设置
         </a>
       </div>
+      <div class="menu-item"
+           [routerLink]="'/app/main/user-message/' + user.userId"
+           routerLinkActive="active"
+           *ngFor="let user of fromUsers">
+        <a href="javascript:;">
+          <i class="fa fa-commenting-o"></i>&nbsp;{{user.username}}
+        </a>
+        <i class="fa fa-remove float-right" (click)="removeMessageOfUser($event, user)"></i>
+      </div>
       <div class="menu-item" (click)="doLogout()">
         <a href="javascript:;"><i class="fa fa-sign-out"></i>&nbsp;退出</a>
       </div>

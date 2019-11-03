@@ -6,6 +6,10 @@ import {filter, map} from 'rxjs/operators';
 import {ChatServerUserGroup} from './chat-server-users';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
+import {CreateChannelReq} from './add-channel/create-channel-req';
+import {CreateUserGroupReq} from './add-user-group/create-user-group-req';
+import {InviteUser} from './invite-user/invite-user';
+import {ResolveServerInvite} from '../main/resolve-server-invite';
 
 @Injectable({
   providedIn: 'root'
@@ -101,5 +105,29 @@ export class ServerInfoService {
 
   deleteUserGroup(id: number): Observable<any> {
     return this.http.delete(`${environment.apiUrl}/api/server/user-group?id=${id}`);
+  }
+
+  deleteServer(id: number): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/api/server?id=${id}`);
+  }
+
+  exitServer(id: number): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/api/server/exit?id=${id}`);
+  }
+
+  addChannel(req: CreateChannelReq): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/api/server/channel`, req);
+  }
+
+  addUserGroup(req: CreateUserGroupReq): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/api/server/user-group`, req);
+  }
+
+  inviteUser(req: InviteUser): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/api/server/invite`, req);
+  }
+
+  resolveServerInvite(req: ResolveServerInvite): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/api/server/invite/resolve`, req);
   }
 }

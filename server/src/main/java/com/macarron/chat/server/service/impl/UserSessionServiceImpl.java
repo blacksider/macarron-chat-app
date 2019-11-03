@@ -1,6 +1,5 @@
 package com.macarron.chat.server.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
 import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,5 +38,16 @@ public class UserSessionServiceImpl implements UserSessionService {
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         SecurityContext context = httpSession.getAttribute(SPRING_SECURITY_CONTEXT);
         return (User) context.getAuthentication().getPrincipal();
+    }
+
+    @Override
+    public WebSocketSession getSessionByIdentifier(String identifier) {
+        for (WebSocketSession session : sessions) {
+            User user = getSessionUser(session);
+            if (user.getUsername().equals(identifier)) {
+                return session;
+            }
+        }
+        return null;
     }
 }

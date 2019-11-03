@@ -23,5 +23,9 @@ public class MessageConstants {
         public static final int TYPE_REPLY_SERVER_CHANNELS = 2011;
         public static final int TYPE_GET_SERVER_USER_GROUP = 2020;
         public static final int TYPE_REPLY_SERVER_USER_GROUP = 2021;
+
+        public static final int TYPE_SERVER_INVITE = 3000;
+
+        public static final int TYPE_ON_VOICE_RTC_CONN = 4000;
     }
 }

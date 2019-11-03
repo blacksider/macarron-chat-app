@@ -10,6 +10,9 @@ import com.macarron.chat.server.common.message.vo.MessageToUser;
 import com.macarron.chat.server.common.server.ServerConstants;
 import com.macarron.chat.server.common.server.dto.ChatServerDTO;
 import com.macarron.chat.server.common.server.dto.CreateServerReqDTO;
+import com.macarron.chat.server.common.server.dto.InviteToServerWrapDTO;
+import com.macarron.chat.server.common.server.dto.InviteUserDTO;
+import com.macarron.chat.server.common.server.dto.ResolveServerInviteDTO;
 import com.macarron.chat.server.exception.MessageException;
 import com.macarron.chat.server.i18n.MessageBundleManager;
 import com.macarron.chat.server.model.ChatServer;
@@ -23,11 +26,13 @@ import com.macarron.chat.server.repository.ChatServerUserGroupRepository;
 import com.macarron.chat.server.repository.ChatServerUserRepository;
 import com.macarron.chat.server.repository.ServerUserRepository;
 import com.macarron.chat.server.service.ChatServerService;
+import com.macarron.chat.server.service.ChatServerUserService;
 import com.macarron.chat.server.service.UserMessageService;
 import com.macarron.chat.server.service.UserService;
 import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -43,6 +48,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,6 +57,7 @@ import java.util.stream.Collectors;
 @Service
 public class ChatServerServiceImpl implements ChatServerService {
     private static final String AVATAR_DEFAULT = "classpath:avatar/server_default.png";
+    private static final String INVITE_USER_KEY = "SERVER_INVITE_USER";
     private byte[] bufferedDefaultAvatar;
     private final ObjectMapper om = new ObjectMapper();
 
@@ -63,6 +71,8 @@ public class ChatServerServiceImpl implements ChatServerService {
     private UserSessionService sessionService;
     private UserMessageService messageService;
     private TransactionTemplate transactionTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
+    private ChatServerUserService serverUserService;
 
     @Autowired
     public void setUserService(UserService userService) {
@@ -112,6 +122,16 @@ public class ChatServerServiceImpl implements ChatServerService {
     @Autowired
     public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
         this.transactionTemplate = transactionTemplate;
+    }
+
+    @Autowired
+    public void setRedisTemplate(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
+
+    @Autowired
+    public void setServerUserService(ChatServerUserService serverUserService) {
+        this.serverUserService = serverUserService;
     }
 
     private byte[] getDefaultAvatar() {
@@ -224,6 +244,27 @@ public class ChatServerServiceImpl implements ChatServerService {
         }
     }
 
+    @Override
+    @Transactional
+    public void exitServer(long id) {
+        ServerUser currentUser = userService.getCurrentUser();
+        if (currentUser == null) {
+            throw new MessageException("error.credentials.invalid");
+        }
+        ChatServerUser serverUser = serverUserRepository.getUserByServerId(id, currentUser);
+        if (serverUser == null) {
+            throw new MessageException("error.credentials.invalid");
+        }
+        if (serverUser.getUserType() == ServerConstants.SERVER_USER_OWNER) {
+            throw new MessageException("error.credentials.invalid");
+        }
+        ChatServer server = serverUser.getUserGroup().getServer();
+        List<ServerUser> serverUserList = serverUserRepository.getServerUsers(server);
+        serverUserRepository.delete(serverUser);
+        notifyServerChanges(currentUser, serverUserList);
+        serverUserService.notifyUserGroupChanges(server);
+    }
+
     private void notifyServerChanges(ServerUser currentUser, List<ServerUser> serverUsers) {
         Map<String, ServerUser> emails = serverUsers.stream()
                 .collect(Collectors.toMap(ServerUser::getEmail, Function.identity()));
@@ -263,6 +304,32 @@ public class ChatServerServiceImpl implements ChatServerService {
         notifyServerChanges(currentUser, serverUsers);
     }
 
+
+    private void notifyServerChangesToUser(ServerUser user) {
+        WebSocketSession session = sessionService.getSessionByIdentifier(user.getEmail());
+        List<ChatServerDTO> servers = getServers(user.getEmail());
+
+        BiaMessage messageData = new BiaMessage();
+
+        messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
+        messageData.setMessageType(MessageConstants.MessageTypes.TYPE_REPLY_SERVERS);
+        MessageFromUser fromUser = MessageBuilder.buildFromUser(user);
+        messageData.setMessageFrom(fromUser);
+
+        MessageToUser toUser = new MessageToUser();
+        toUser.setUserId(user.getId());
+        toUser.setUsername(user.getUsername());
+        messageData.setMessageTo(toUser);
+
+        try {
+            byte[] serversBytes = om.writeValueAsString(servers).getBytes();
+            messageData.setMessage(serversBytes);
+            messageService.sendMessage(session, messageData);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse data of server list", e);
+        }
+    }
+
     @Override
     @Transactional
     public void validateServerUser(long serverId, String email) {
@@ -286,5 +353,113 @@ public class ChatServerServiceImpl implements ChatServerService {
             return null;
         }
         return serverUser;
+    }
+
+    @Override
+    @Transactional
+    public void inviteUser(final InviteUserDTO data) {
+        ServerUser currentUser = userService.getCurrentUser();
+        ChatServerUser serverUser = validateUserIsOwnerAndGet(data.getServerId(), currentUser);
+        if (serverUser == null) {
+            throw new MessageException("error.credentials.invalid");
+        }
+        ChatServer server = serverUser.getUserGroup().getServer();
+        String toUserString = data.getToUser();
+        String[] toUserSplits = toUserString.split("#");
+        if (toUserSplits.length != 2) {
+            throw new MessageException("error.user.invite.to-user.invalid");
+        }
+        String username = toUserSplits[0];
+        int tag;
+        try {
+            tag = Integer.parseInt(toUserSplits[1]);
+        } catch (NumberFormatException e) {
+            log.error("Invalid tag value {}", toUserSplits[1], e);
+            throw new MessageException("error.user.invite.to-user.invalid");
+        }
+        Optional<ServerUser> userOpt = userRepository.findByUsernameAndTag(username, tag);
+        if (!userOpt.isPresent()) {
+            log.warn("User {} not exists", toUserString);
+            return;
+        }
+        ServerUser toUserData = userOpt.get();
+        if (toUserData.getId() == currentUser.getId()) {
+            log.warn("Can't invite user self");
+            return;
+        }
+
+        String inviteId = UUID.randomUUID().toString();
+
+        BiaMessage messageData = new BiaMessage();
+        messageData.setTime(ZonedDateTime.now().toInstant().toEpochMilli());
+        messageData.setMessageType(MessageConstants.MessageTypes.TYPE_SERVER_INVITE);
+        MessageFromUser fromUser = MessageBuilder.buildFromUser(currentUser);
+        messageData.setMessageFrom(fromUser);
+
+        MessageToUser toUser = new MessageToUser();
+        toUser.setUserId(toUserData.getId());
+        toUser.setUsername(toUserData.getUsername());
+        messageData.setMessageTo(toUser);
+
+        InviteToServerWrapDTO inviteToServerWrap = new InviteToServerWrapDTO(
+                inviteId,
+                toUserData.getId(),
+                ChatServerDTO.fromModel(server));
+        try {
+            byte[] messageBytes = om.writeValueAsString(inviteToServerWrap).getBytes();
+            messageData.setMessage(messageBytes);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse data of invitation", e);
+            return;
+        }
+
+        WebSocketSession toSession = sessionService.getSessionByIdentifier(toUserData.getEmail());
+        if (toSession != null) {
+            messageService.sendMessage(toSession, messageData);
+
+            String inviteCacheId = getInviteRedisKey(inviteId);
+            redisTemplate.opsForValue().set(inviteCacheId, inviteToServerWrap);
+            redisTemplate.expire(inviteCacheId, 30, TimeUnit.MINUTES);
+        }
+    }
+
+    private String getInviteRedisKey(String inviteId) {
+        return INVITE_USER_KEY + '-' + inviteId;
+    }
+
+    @Override
+    @Transactional
+    public void resolveInvite(ResolveServerInviteDTO req) {
+        ServerUser currentUser = userService.getCurrentUser();
+        String inviteCacheId = getInviteRedisKey(req.getInviteId());
+        InviteToServerWrapDTO inviteToServerWrap = (InviteToServerWrapDTO) redisTemplate
+                .opsForValue()
+                .get(inviteCacheId);
+        if (inviteToServerWrap == null) {
+            throw new MessageException("error.user.invite.timeout");
+        }
+        ChatServerDTO toServerDTO = inviteToServerWrap.getToServer();
+        ChatServer toServer = chatServerRepository.getOne(toServerDTO.getId());
+        if (toServer == null) {
+            log.warn("Server not exists of id {}", toServerDTO.getId());
+            return;
+        }
+        if (currentUser.getId() != inviteToServerWrap.getUserId()) {
+            log.warn("Server invitation is for user {}", inviteToServerWrap.getUserId());
+            return;
+        }
+        if (!req.isAccept()) {
+            redisTemplate.delete(inviteCacheId);
+            return;
+        }
+        ChatServerUserGroup userGroup = serverUserGroupRepository.findFirstByServer(toServer);
+        ChatServerUser serverUser = new ChatServerUser();
+        serverUser.setUserType(ServerConstants.SERVER_USER_MEMBER);
+        serverUser.setUser(currentUser);
+        serverUser.setUserGroup(userGroup);
+        serverUserRepository.save(serverUser);
+        redisTemplate.delete(inviteCacheId);
+        notifyServerChangesToUser(currentUser);
+        serverUserService.notifyUserGroupChanges(toServer);
     }
 }

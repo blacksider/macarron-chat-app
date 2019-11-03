@@ -21,12 +21,13 @@ import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-import {ChatServerUserGroup} from '../chat-server-users';
+import {ChatServerUserGroup, SERVER_USER_OWNER} from '../chat-server-users';
 import {BsModalRef, BsModalService} from 'ngx-bootstrap';
 import {AddChannelComponent} from '../add-channel/add-channel.component';
 import {AddUserGroupComponent} from '../add-user-group/add-user-group.component';
 import {ConfirmService} from '../../shared/confirm/confirm.service';
 import {ToastrService} from 'ngx-toastr';
+import {InviteUserComponent} from '../invite-user/invite-user.component';
 
 const KEYCODE_ENTER = 'Enter';
 const KEYCODE_Shift = 'ShiftLeft';
@@ -58,6 +59,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   delta = 500;
   addChannelModalRef: BsModalRef;
   addGroupModalRef: BsModalRef;
+  inviteUserModalRef: BsModalRef;
 
   constructor(private svrService: ServerInfoService,
               private connService: WsConnectionService,
@@ -156,6 +158,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     }
     if (this.addGroupModalRef) {
       this.addGroupModalRef.hide();
+    }
+    if (this.inviteUserModalRef) {
+      this.inviteUserModalRef.hide();
     }
   }
 
@@ -281,5 +286,62 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         });
       }
     });
+  }
+
+  isOwner() {
+    if (!this.userGroups) {
+      return false;
+    }
+    for (const group of this.userGroups) {
+      for (const user of group.users) {
+        if (user.user.id === this.authInfo.userId) {
+          return user.userType === SERVER_USER_OWNER;
+        }
+      }
+    }
+    return false;
+  }
+
+  exitServer() {
+    if (!this.serverInfo) {
+      return;
+    }
+    this.confirm.confirm({
+      title: '警告',
+      message: '确定删除退出该服务器？'
+    }).subscribe(ok => {
+      if (ok) {
+        this.svrService.exitServer(this.serverInfo.id).subscribe(_ => {
+          this.toastr.success('退出成功');
+        });
+      }
+    });
+  }
+
+  deleteServer() {
+    if (!this.serverInfo) {
+      return;
+    }
+
+    this.confirm.confirm({
+      title: '警告',
+      message: '确定删除删除该服务器？'
+    }).subscribe(ok => {
+      if (ok) {
+        this.svrService.deleteServer(this.serverInfo.id).subscribe(_ => {
+          this.toastr.success('删除成功');
+        });
+      }
+    });
+  }
+
+  inviteUser() {
+    if (!this.serverInfo) {
+      return;
+    }
+    const initialState = {
+      serverId: this.serverInfo.id
+    };
+    this.inviteUserModalRef = this.modalService.show(InviteUserComponent, {class: 'modal-dialog-centered', initialState});
   }
 }

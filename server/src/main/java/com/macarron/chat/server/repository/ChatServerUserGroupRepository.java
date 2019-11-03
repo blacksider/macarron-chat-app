@@ -14,4 +14,6 @@ public interface ChatServerUserGroupRepository extends JpaRepository<ChatServerU
     boolean existsByServerAndGroupName(final ChatServer server, final String name);
 
     long countByServer(ChatServer server);
+
+    ChatServerUserGroup findFirstByServer(final ChatServer server);
 }

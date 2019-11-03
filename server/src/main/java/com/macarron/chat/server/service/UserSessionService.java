@@ -13,4 +13,6 @@ public interface UserSessionService {
     List<WebSocketSession> getSessions();
 
     User getSessionUser(WebSocketSession socketSession);
+
+    WebSocketSession getSessionByIdentifier(String identifier);
 }

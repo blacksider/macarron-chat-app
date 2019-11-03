@@ -8,8 +8,9 @@
         <i class="fa fa-caret-down"></i>
       </div>
       <ul *dropdownMenu class="dropdown-menu server-name-dropdown" role="menu">
-        <li role="menuitem"><a class="dropdown-item" href="javascript:;">设置</a></li>
-        <li role="menuitem"><a class="dropdown-item" href="javascript:;">退出服务器</a></li>
+        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="inviteUser()">邀请</a></li>
+        <li role="menuitem" *ngIf="!isOwner()"><a class="dropdown-item" href="javascript:;" (click)="exitServer()">退出服务器</a></li>
+        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="deleteServer()">删除服务器</a></li>
       </ul>
     </div>
     <div class="body">

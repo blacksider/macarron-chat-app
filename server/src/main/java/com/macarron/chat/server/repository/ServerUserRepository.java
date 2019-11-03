@@ -13,4 +13,6 @@ public interface ServerUserRepository extends JpaRepository<ServerUser, Long> {
     boolean existsByEmail(final String email);
 
     boolean existsByEmailAndIdNot(final String email, final long id);
+
+    Optional<ServerUser> findByUsernameAndTag(final String username, final int tag);
 }

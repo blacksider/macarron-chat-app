@@ -4,6 +4,7 @@ import com.macarron.chat.server.model.ChatServer;
 import com.macarron.chat.server.model.ChatServerUser;
 import com.macarron.chat.server.model.ChatServerUserGroup;
 import com.macarron.chat.server.model.ServerUser;
+import org.apache.catalina.Server;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

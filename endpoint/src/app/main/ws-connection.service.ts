@@ -1,10 +1,11 @@
 import {EventEmitter, Injectable} from '@angular/core';
 import {BiaMessageWebsocketSubject, str2ByteArray, utf8ByteToUnicodeStr} from './bia-message-websocket-subject';
 import {AuthService} from '../auth/auth.service';
-import {BiaMessage, MessageToServerChannel} from './bia-message';
+import {BiaMessage, MESSAGE_FROM_USER, MESSAGE_TYPE_SERVER_INVITE, MessageFromUser, MessageTo, MessageToServerChannel} from './bia-message';
 import {merge, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {environment} from '../../environments/environment';
+import {InviteToServerWrap} from './invite-to-server-wrap';
 
 function convertBase64ToBinary(base64) {
   const raw = window.atob(base64);
@@ -16,12 +17,18 @@ function convertBase64ToBinary(base64) {
   return array;
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class WsConnectionService {
   private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   private ready = new EventEmitter<boolean>();
+
   private channelMessages: Map<number, BiaMessage[]> = new Map<number, BiaMessage[]>();
   private channelMessagesChange = new EventEmitter<Map<number, BiaMessage[]>>();
+
+  private fromUserMessages: Map<number, BiaMessage[]> = new Map<number, BiaMessage[]>();
+  private fromUserMessagesChange = new EventEmitter<Map<number, BiaMessage[]>>();
 
   constructor(private authService: AuthService) {
   }
@@ -81,5 +88,81 @@ export class WsConnectionService {
       return merge(of(this.channelMessages.get(channelId)), messageChangeObv);
     }
     return messageChangeObv;
+  }
+
+  addFromUserMessage(value: BiaMessage) {
+    const messageFrom = value.messageFrom as MessageFromUser;
+    let messages;
+    if (!this.fromUserMessages.has(messageFrom.userId)) {
+      messages = [];
+      this.fromUserMessages.set(messageFrom.userId, messages);
+    } else {
+      messages = this.fromUserMessages.get(messageFrom.userId);
+    }
+    messages.push(value);
+    this.fromUserMessagesChange.emit(this.fromUserMessages);
+  }
+
+  getFromUserMessage(userId: number): Observable<BiaMessage[]> {
+    const messageChangeObv = this.fromUserMessagesChange.pipe(
+      map(messages => {
+        if (messages.has(userId)) {
+          return messages.get(userId);
+        }
+        return null;
+      }),
+      filter(messages => !!messages)
+    );
+    if (this.fromUserMessages.has(userId)) {
+      return merge(of(this.fromUserMessages.get(userId)), messageChangeObv);
+    }
+    return messageChangeObv;
+  }
+
+  removeFromUserMessage(userId: number) {
+    if (this.fromUserMessages.has(userId)) {
+      this.fromUserMessages.delete(userId);
+      this.fromUserMessagesChange.emit(this.fromUserMessages);
+    }
+  }
+
+  private mapFromUserMessageUsers(messages: Map<number, BiaMessage[]>): MessageFromUser[] {
+    const users = [];
+    for (const key of messages.keys()) {
+      if (messages.get(key).length > 0) {
+        users.push(messages.get(key)[0].messageFrom as MessageFromUser);
+      }
+    }
+    return users;
+  }
+
+  getFromUserMessageUsers(): Observable<MessageFromUser[]> {
+    const message = new InviteToServerWrap();
+    message.inviteId = 'uid1';
+    message.toServer = {
+      id: 1,
+      serverName: 'test',
+      avatar: ''
+    };
+    message.userId = 1;
+    this.fromUserMessages.set(1, [
+      {
+        messageFrom: {
+          type: MESSAGE_FROM_USER,
+          userId: 1,
+          username: 'test'
+        } as MessageFromUser,
+        messageType: MESSAGE_TYPE_SERVER_INVITE,
+        messageTo: new MessageTo(),
+        time: new Date().getTime(),
+        message: str2ByteArray(JSON.stringify(message))
+      }
+    ]);
+    const messageChangeObv = this.fromUserMessagesChange.pipe(
+      map(messages => {
+        return this.mapFromUserMessageUsers(messages);
+      })
+    );
+    return merge(of(this.mapFromUserMessageUsers(this.fromUserMessages)), messageChangeObv);
   }
 }

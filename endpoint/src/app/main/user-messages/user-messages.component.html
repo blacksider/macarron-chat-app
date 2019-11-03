@@ -1,0 +1,14 @@
+<div class="message-content">
+  <div *ngFor="let message of fromUserMessage" class="message">
+    <div [ngSwitch]="message.messageType">
+      <div *ngSwitchCase="messageTypes.inviteToServer">
+        <span class="invite-notify">向您发送了一个邀请，邀请您到服务器：<b>{{getInviteToServerData(message)}}</b></span>
+        <div class="invite-btn">
+          <button type="button" class="btn btn-primary btm-sm" (click)="resolveInvite(true, message)">接受</button>
+          <button type="button" class="btn btn-warning btm-sm" (click)="resolveInvite(true, message)">拒绝</button>
+        </div>
+      </div>
+      <div *ngSwitchDefault></div>
+    </div>
+  </div>
+</div>

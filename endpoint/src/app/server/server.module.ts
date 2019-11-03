@@ -7,9 +7,10 @@ import {AddUserGroupComponent} from './add-user-group/add-user-group.component';
 import {BsDropdownModule, PopoverModule} from 'ngx-bootstrap';
 import {FormsModule} from '@angular/forms';
 import {SharedModule} from '../shared/shared.module';
+import {InviteUserComponent} from './invite-user/invite-user.component';
 
 @NgModule({
-  declarations: [ServerInfoComponent, AddChannelComponent, AddUserGroupComponent],
+  declarations: [ServerInfoComponent, AddChannelComponent, AddUserGroupComponent, InviteUserComponent],
   imports: [
     CommonModule,
     ServerRoutingModule,
@@ -21,7 +22,8 @@ import {SharedModule} from '../shared/shared.module';
   providers: [],
   entryComponents: [
     AddChannelComponent,
-    AddUserGroupComponent
+    AddUserGroupComponent,
+    InviteUserComponent
   ]
 })
 export class ServerModule {

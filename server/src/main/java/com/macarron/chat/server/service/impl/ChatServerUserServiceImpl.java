@@ -149,6 +149,7 @@ public class ChatServerUserServiceImpl implements ChatServerUserService {
         messageService.sendMessageBelongsTO(messageData, emails);
     }
 
+    @Override
     @Transactional
     public void notifyUserGroupChanges(ChatServer server) {
         ServerUser currentUser = userService.getCurrentUser();

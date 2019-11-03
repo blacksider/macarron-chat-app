@@ -3,8 +3,7 @@ import {CreateUserGroupReq} from './create-user-group-req';
 import {NgForm} from '@angular/forms';
 import {BsModalRef} from 'ngx-bootstrap';
 import {ToastrService} from 'ngx-toastr';
-import {HttpClient} from '@angular/common/http';
-import {environment} from '../../../environments/environment';
+import {ServerInfoService} from '../server-info.service';
 
 @Component({
   selector: 'app-add-user-group',
@@ -18,7 +17,7 @@ export class AddUserGroupComponent implements OnInit {
 
   constructor(public bsModalRef: BsModalRef,
               private toastr: ToastrService,
-              private http: HttpClient) {
+              private svrService: ServerInfoService) {
   }
 
   ngOnInit() {
@@ -37,7 +36,7 @@ export class AddUserGroupComponent implements OnInit {
       });
       return;
     }
-    this.http.post<any>(`${environment.apiUrl}/api/server/user-group`, this.req).subscribe(_ => {
+    this.svrService.addUserGroup(this.req).subscribe(_ => {
       this.toastr.success('创建成功').onShown.subscribe(() => {
         this.close();
       });

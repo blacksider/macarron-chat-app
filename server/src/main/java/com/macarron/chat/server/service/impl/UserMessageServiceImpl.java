@@ -97,11 +97,23 @@ public class UserMessageServiceImpl implements UserMessageService {
                 this.resolveChatTextMessage(session, messageData);
                 break;
             }
+            case MessageConstants.MessageTypes.TYPE_ON_VOICE_RTC_CONN: {
+                this.resolveVoiceRTCConnectionRequirement(session, messageData);
+                break;
+            }
             default: {
                 log.debug("Unknown message type {}", messageData.getMessageType());
                 break;
             }
         }
+    }
+
+    private void resolveVoiceRTCConnectionRequirement(WebSocketSession session, BiaMessage messageData) {
+        Assert.isTrue(messageData.getMessageTo().getType().equals(MessageConstants.MessageToTypes.MESSAGE_TO_USER),
+                "Invalid message to data");
+        MessageToUser toUser = (MessageToUser) messageData.getMessageTo();
+        WebSocketSession toSession = userSessionService.getSessionByIdentifier(toUser.getUsername());
+        sendMessage(toSession, messageData);
     }
 
     private void resolveGetServerUserGroup(WebSocketSession session, BiaMessage messageData) {

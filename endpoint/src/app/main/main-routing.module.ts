@@ -3,6 +3,7 @@ import {RouterModule, Routes} from '@angular/router';
 import {MainComponent} from './main/main.component';
 import {MainDetailComponent} from './main-detail/main-detail.component';
 import {SettingComponent} from './setting/setting.component';
+import {UserMessagesComponent} from './user-messages/user-messages.component';
 
 const routes: Routes = [
   {
@@ -16,7 +17,8 @@ const routes: Routes = [
           {
             path: '', redirectTo: 'setting', pathMatch: 'full'
           },
-          {path: 'setting', component: SettingComponent}
+          {path: 'setting', component: SettingComponent},
+          {path: 'user-message/:userId', component: UserMessagesComponent}
         ]
       },
       {
