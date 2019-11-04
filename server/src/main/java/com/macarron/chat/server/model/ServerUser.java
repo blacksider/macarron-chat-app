@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -41,6 +42,7 @@ public class ServerUser implements UserDetails {
     @Column
     private String password;
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(name = "avatar")
     private byte[] avatar;
     @Column

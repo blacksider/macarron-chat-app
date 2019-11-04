@@ -11,12 +11,14 @@ import com.macarron.chat.server.common.server.dto.ChatServerDTO;
 import com.macarron.chat.server.common.server.dto.ChatServerUserGroupDTO;
 import com.macarron.chat.server.common.server.dto.ServerChannelWrapDTO;
 import com.macarron.chat.server.common.server.dto.ServerUserGroupWrapDTO;
+import com.macarron.chat.server.common.user.ServerUserDTO;
 import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
 import com.macarron.chat.server.model.ServerUser;
 import com.macarron.chat.server.repository.ChatServerUserRepository;
 import com.macarron.chat.server.service.ChatServerChannelService;
 import com.macarron.chat.server.service.ChatServerService;
 import com.macarron.chat.server.service.ChatServerUserService;
+import com.macarron.chat.server.service.PlayerToChannelService;
 import com.macarron.chat.server.service.UserMessageService;
 import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -33,6 +36,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -45,6 +49,7 @@ public class UserMessageServiceImpl implements UserMessageService {
     private ChatServerChannelService channelService;
     private ChatServerUserService serverUserService;
     private UserSessionService sessionService;
+    private PlayerToChannelService playerToChannelService;
 
     @Autowired
     public void setUserSessionService(UserSessionService userSessionService) {
@@ -76,6 +81,11 @@ public class UserMessageServiceImpl implements UserMessageService {
         this.sessionService = sessionService;
     }
 
+    @Autowired
+    public void setPlayerToChannelService(PlayerToChannelService playerToChannelService) {
+        this.playerToChannelService = playerToChannelService;
+    }
+
     @Override
     public void handleMessage(WebSocketSession session,
                               BiaMessage messageData,
@@ -101,11 +111,22 @@ public class UserMessageServiceImpl implements UserMessageService {
                 this.resolveVoiceRTCConnectionRequirement(session, messageData);
                 break;
             }
+            case MessageConstants.MessageTypes.TYPE_ON_PLAYER_JOIN_CHANNEL:
+            case MessageConstants.MessageTypes.TYPE_ON_PLAYER_LEFT_CHANNEL: {
+                this.resolvePlayerToChannelMessage(session, messageData);
+                break;
+            }
             default: {
                 log.debug("Unknown message type {}", messageData.getMessageType());
                 break;
             }
         }
+    }
+
+    private void resolvePlayerToChannelMessage(WebSocketSession session, BiaMessage messageData) {
+        Assert.isTrue(messageData.getMessageTo().getType().equals(MessageConstants.MessageToTypes.MESSAGE_TO_SERVER_CHANNEL),
+                "Invalid message to data");
+        playerToChannelService.handlePlayerToChannelMessage(session, messageData);
     }
 
     private void resolveVoiceRTCConnectionRequirement(WebSocketSession session, BiaMessage messageData) {
@@ -136,7 +157,14 @@ public class UserMessageServiceImpl implements UserMessageService {
         String userEmail = userSessionService.getSessionUser(session).getUsername();
         long serverId = Long.parseLong(new String(messageData.getMessage()));
         List<ChatServerChannelDTO> channels = channelService.getServerChannels(serverId, userEmail);
-        ServerChannelWrapDTO data = new ServerChannelWrapDTO(serverId, channels);
+        Map<Long, List<ServerUserDTO>> channelUsers = null;
+        if (!CollectionUtils.isEmpty(channels)) {
+            List<Long> channelIds = channels.stream()
+                    .map(ChatServerChannelDTO::getId)
+                    .collect(Collectors.toList());
+            channelUsers = playerToChannelService.getChannelsUsers(channelIds);
+        }
+        ServerChannelWrapDTO data = new ServerChannelWrapDTO(serverId, channels, channelUsers);
         try {
             byte[] messageBytes = om.writeValueAsString(data).getBytes();
             messageData.setMessage(messageBytes);
@@ -180,6 +208,10 @@ public class UserMessageServiceImpl implements UserMessageService {
 
     @Override
     public void sendMessage(WebSocketSession session, BiaMessage messageData) {
+        if (!session.isOpen()) {
+            log.warn("Connection {} already closed, will not send anything", session.getId());
+            return;
+        }
         // update session timeout
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         httpSession.setLastAccessedTime(Instant.now());
@@ -193,6 +225,8 @@ public class UserMessageServiceImpl implements UserMessageService {
             log.error("Failed to parse message data", e);
         } catch (IOException e) {
             log.error("Failed to send data of server list", e);
+        } catch (Exception e) {
+            log.error("Un expected error", e);
         }
     }
 

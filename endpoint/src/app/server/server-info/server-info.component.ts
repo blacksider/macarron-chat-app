@@ -11,6 +11,8 @@ import {
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVER_CHANNELS,
   MESSAGE_TYPE_GET_SERVER_USER_GROUP,
+  MESSAGE_TYPE_ON_PLAYER_JOIN_CHANNEL,
+  MESSAGE_TYPE_ON_PLAYER_LEFT_CHANNEL,
   MESSAGE_TYPE_TEXT,
   MessageFromUser,
   MessageToServerChannel,
@@ -60,6 +62,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   addChannelModalRef: BsModalRef;
   addGroupModalRef: BsModalRef;
   inviteUserModalRef: BsModalRef;
+  getUsersOfChannel = this.connService.getUsersOfChannel.bind(this.connService);
 
   constructor(private svrService: ServerInfoService,
               private connService: WsConnectionService,
@@ -168,7 +171,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     return byteArray2Str(message);
   }
 
-  connectTo(channel: ChatServerChannel) {
+  connectTo(channel: ChatServerChannel, $event?: MouseEvent) {
+    if ($event) {
+      $event.preventDefault();
+    }
     if (!!this.currentChannel && this.currentChannel.id === channel.id) {
       return;
     }
@@ -343,5 +349,57 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       serverId: this.serverInfo.id
     };
     this.inviteUserModalRef = this.modalService.show(InviteUserComponent, {class: 'modal-dialog-centered', initialState});
+  }
+
+  isPlayerInChannel(room: ChatServerChannel) {
+    const currentIn = this.connService.getUserInChannel(this.authInfo.userId);
+    return currentIn === room.id;
+  }
+
+  joinToChannel(room: ChatServerChannel, $event: MouseEvent) {
+    $event.preventDefault();
+    if (!this.serverInfo) {
+      return;
+    }
+    const currentIn = this.connService.getUserInChannel(this.authInfo.userId);
+    if (currentIn && currentIn === room.id) {
+      return;
+    }
+    if (currentIn) {
+      this.leftChannel(currentIn);
+    }
+    this.globalSocketSubject.send({
+      messageFrom: {
+        type: MESSAGE_FROM_USER,
+        userId: this.authInfo.userId,
+        username: this.authInfo.username
+      } as MessageFromUser,
+      time: new Date().getTime(),
+      messageTo: {
+        type: MESSAGE_TO_SERVER_CHANNEL,
+        serverId: this.serverInfo.id,
+        channelId: room.id
+      } as MessageToServerChannel,
+      messageType: MESSAGE_TYPE_ON_PLAYER_JOIN_CHANNEL,
+      message: []
+    } as BiaMessage);
+  }
+
+  leftChannel(id: number) {
+    this.globalSocketSubject.send({
+      messageFrom: {
+        type: MESSAGE_FROM_USER,
+        userId: this.authInfo.userId,
+        username: this.authInfo.username
+      } as MessageFromUser,
+      time: new Date().getTime(),
+      messageTo: {
+        type: MESSAGE_TO_SERVER_CHANNEL,
+        serverId: this.serverInfo.id,
+        channelId: id
+      } as MessageToServerChannel,
+      messageType: MESSAGE_TYPE_ON_PLAYER_LEFT_CHANNEL,
+      message: []
+    } as BiaMessage);
   }
 }

@@ -1,5 +1,5 @@
 @echo off
 echo Stopping dependencies...
 echo Stopping related databases...
-start cmd /k "cd %~dp0Server && docker-compose down"
+start cmd /k "cd %~dp0chat-server && docker-compose down"
 pause

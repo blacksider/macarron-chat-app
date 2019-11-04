@@ -72,9 +72,17 @@
       padding-right: 5px;
       padding-left: 5px;
 
+      .channel-container {
+        &:first-child {
+          .channel {
+            margin-top: 0;
+          }
+        }
+      }
+
       .channel {
         border-radius: 4px;
-        margin-bottom: 5px;
+        margin-top: 5px;
 
         &.active {
           background-color: lighten(@left-bg-color, 10%);
@@ -85,11 +93,29 @@
         }
       }
 
+      .channel-users {
+        padding: 5px 20px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        img {
+          width: 20px;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+
+        span {
+          cursor: pointer;
+        }
+      }
+
       .add-channel {
         height: 40px;
         cursor: pointer;
         border-radius: 4px;
         padding: 5px 10px;
+        margin-top: 5px;
         background-color: lighten(@left-bg-color, 10%);
 
         i {
@@ -99,7 +125,7 @@
         }
 
         &:hover {
-          background-color: lighten(@left-bg-color, 15%);
+          background-color: lighten(@left-bg-color, 5%);
         }
       }
 

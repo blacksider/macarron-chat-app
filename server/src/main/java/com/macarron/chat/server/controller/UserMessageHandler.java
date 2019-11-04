@@ -3,6 +3,7 @@ package com.macarron.chat.server.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macarron.chat.server.common.message.BiaMessage;
 import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
+import com.macarron.chat.server.service.PlayerToChannelService;
 import com.macarron.chat.server.service.UserMessageService;
 import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
 
     private UserMessageService userMessageService;
     private UserSessionService userSessionService;
+    private PlayerToChannelService playerToChannelService;
 
     @Autowired
     public void setUserMessageService(UserMessageService userMessageService) {
@@ -35,8 +37,13 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
         this.userSessionService = userSessionService;
     }
 
+    @Autowired
+    public void setPlayerToChannelService(PlayerToChannelService playerToChannelService) {
+        this.playerToChannelService = playerToChannelService;
+    }
+
     @Override
-    protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
+    protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
         // update session timeout
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         httpSession.setLastAccessedTime(Instant.now());
@@ -48,7 +55,11 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
             return;
         }
 
-        this.userMessageService.handleMessage(session, messageData, message);
+        try {
+            this.userMessageService.handleMessage(session, messageData, message);
+        } catch (Exception e) {
+            log.error("Failed to handle message", e);
+        }
     }
 
     private BiaMessage readyMessage(BinaryMessage message) {
@@ -67,6 +78,7 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        this.playerToChannelService.handlePlayerCloseConnection(session);
         this.userSessionService.removeSession(session);
     }
 }

@@ -8,22 +8,32 @@
         <i class="fa fa-caret-down"></i>
       </div>
       <ul *dropdownMenu class="dropdown-menu server-name-dropdown" role="menu">
-        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="inviteUser()">邀请</a></li>
-        <li role="menuitem" *ngIf="!isOwner()"><a class="dropdown-item" href="javascript:;" (click)="exitServer()">退出服务器</a></li>
-        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="deleteServer()">删除服务器</a></li>
+        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="inviteUser()">邀请</a>
+        </li>
+        <li role="menuitem" *ngIf="!isOwner()"><a class="dropdown-item" href="javascript:;"
+                                                  (click)="exitServer()">退出服务器</a></li>
+        <li role="menuitem" *ngIf="isOwner()"><a class="dropdown-item" href="javascript:;" (click)="deleteServer()">删除服务器</a>
+        </li>
       </ul>
     </div>
     <div class="body">
-      <div *ngFor="let room of channels">
+      <div *ngFor="let room of channels" class="channel-container">
         <div class="channel" dropdown container="body" [autoClose]="true"
              [ngClass]="{'active': isInChannel(room)}">
           <div class="channel-name">
-            <span (click)="connectTo(room)">{{room.channelName}}</span>
+            <span (click)="connectTo(room, $event)" (dblclick)="joinToChannel(room, $event)">{{room.channelName}}</span>
             <i class="fa fa-gear" dropdownToggle></i>
           </div>
           <ul *dropdownMenu class="dropdown-menu channel-name-dropdown" role="menu">
-            <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteChannel(room.id)">删除</a></li>
+            <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteChannel(room.id)">删除频道</a>
+            <li role="menuitem" *ngIf="isPlayerInChannel(room)">
+              <a class="dropdown-item" href="javascript:;" (click)="leftChannel(room.id)">退出频道</a>
+            </li>
           </ul>
+        </div>
+        <div class="channel-users" *ngFor="let user of getUsersOfChannel(room.id) | async">
+          <img [src]="'data:image/png;base64,' + user.avatar">&nbsp;
+          <span>{{user.username}}</span>
         </div>
       </div>
 
@@ -65,7 +75,8 @@
           <i class="fa fa-gear" dropdownToggle></i>
         </div>
         <ul *dropdownMenu class="dropdown-menu user-group-name-dropdown" role="menu">
-          <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteUserGroup(group.id)">删除</a></li>
+          <li role="menuitem"><a class="dropdown-item" href="javascript:;" (click)="deleteUserGroup(group.id)">删除</a>
+          </li>
         </ul>
       </div>
       <div class="group-users">

@@ -27,5 +27,11 @@ public class MessageConstants {
         public static final int TYPE_SERVER_INVITE = 3000;
 
         public static final int TYPE_ON_VOICE_RTC_CONN = 4000;
+
+        public static final int TYPE_ON_PLAYER_JOIN_CHANNEL = 5000;
+        public static final int TYPE_ON_PLAYER_LEFT_CHANNEL = 5001;
+
+        public static final int TYPE_PLAYER_JOIN_CHANNEL = 5100;
+        public static final int TYPE_PLAYER_LEFT_CHANNEL = 5101;
     }
 }

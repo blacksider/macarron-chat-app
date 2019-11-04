@@ -8,12 +8,15 @@ import {
   MESSAGE_FROM_USER,
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVERS,
+  MESSAGE_TYPE_PLAYER_JOIN_CHANNEL,
+  MESSAGE_TYPE_PLAYER_LEFT_CHANNEL,
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
   MESSAGE_TYPE_REPLY_SERVER_USER_GROUP,
   MESSAGE_TYPE_REPLY_SERVERS,
   MESSAGE_TYPE_SERVER_INVITE,
   MESSAGE_TYPE_TEXT,
   MessageFromUser,
+  MessageToServerChannel,
   MessageToUser
 } from '../bia-message';
 import {ChatServer} from '../../server/chat-server';
@@ -24,6 +27,10 @@ import {ServerChannelWrap} from '../../server/chat-server-channel';
 import {ServerUserGroupWrap} from '../../server/chat-server-users';
 import {ElectronService} from 'ngx-electron';
 import {Router} from '@angular/router';
+import {interval, Observable, Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
+import {HttpClient} from '@angular/common/http';
+import {environment} from '../../../environments/environment';
 
 @Component({
   selector: 'app-main',
@@ -31,13 +38,17 @@ import {Router} from '@angular/router';
   styleUrls: ['./main.component.less']
 })
 export class MainComponent implements OnInit, OnDestroy {
+  private ngUnSubscribe = new Subject();
   private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   servers: ChatServer[];
   authInfo: AuthInfo;
   bsModalRef: BsModalRef;
+  private keepAliveIntervalObv: Observable<number>;
+  private keepAliveInterval = 10000;
 
   constructor(private wsConnService: WsConnectionService,
               private modalService: BsModalService,
+              private http: HttpClient,
               private serverInfoService: ServerInfoService,
               private electron: ElectronService,
               private router: Router,
@@ -46,50 +57,19 @@ export class MainComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.authInfo = this.authService.authInfo;
+
+    this.keepAliveIntervalObv = interval(this.keepAliveInterval);
+    this.keepAliveIntervalObv
+      .pipe(takeUntil(this.ngUnSubscribe))
+      .subscribe(_ => {
+        this.doKeepAlive();
+      });
     this.authService.getAuthorizationToken().subscribe(token => {
       this.globalSocketSubject = this.wsConnService.connectGlobalSubject(token);
       this.globalSocketSubject.subscribe(value => {
-        switch (value.messageType) {
-          case MESSAGE_TYPE_REPLY_SERVERS: {
-            this.parseServers(value.message);
-            break;
-          }
-          case MESSAGE_TYPE_REPLY_SERVER_CHANNELS: {
-            this.parseServerChannels(value.message);
-            break;
-          }
-          case MESSAGE_TYPE_REPLY_SERVER_USER_GROUP: {
-            this.parseServerUserGroups(value.message);
-            break;
-          }
-          case MESSAGE_TYPE_TEXT: {
-            this.parseTextMessage(value);
-            break;
-          }
-          case MESSAGE_TYPE_SERVER_INVITE: {
-            this.parseInviteToServerMessage(value);
-            break;
-          }
-          default: {
-            break;
-          }
-        }
+        this.handleMessage(value);
       });
-      this.globalSocketSubject.send({
-        time: new Date().getTime(),
-        messageFrom: {
-          type: MESSAGE_FROM_USER,
-          userId: this.authInfo.userId,
-          username: this.authInfo.username
-        } as MessageFromUser,
-        messageTo: {
-          type: MESSAGE_TO_USER,
-          userId: this.authInfo.userId,
-          username: this.authInfo.username
-        } as MessageToUser,
-        messageType: MESSAGE_TYPE_GET_SERVERS,
-        message: []
-      } as BiaMessage);
+      this.requireServers();
     });
     this.serverInfoService.getServers().subscribe(value => {
       if (!value || value.length === 0) {
@@ -103,6 +83,65 @@ export class MainComponent implements OnInit, OnDestroy {
     this.globalSocketSubject.complete();
     if (this.bsModalRef) {
       this.bsModalRef.hide();
+    }
+    this.ngUnSubscribe.next();
+    this.ngUnSubscribe.complete();
+  }
+
+  doKeepAlive() {
+    this.http.get(`${environment.apiUrl}/api/user/check?time=${new Date().getTime()}`, {responseType: 'text'})
+      .subscribe(_ => {
+      });
+  }
+
+  private requireServers() {
+    this.globalSocketSubject.send({
+      time: new Date().getTime(),
+      messageFrom: {
+        type: MESSAGE_FROM_USER,
+        userId: this.authInfo.userId,
+        username: this.authInfo.username
+      } as MessageFromUser,
+      messageTo: {
+        type: MESSAGE_TO_USER,
+        userId: this.authInfo.userId,
+        username: this.authInfo.username
+      } as MessageToUser,
+      messageType: MESSAGE_TYPE_GET_SERVERS,
+      message: []
+    } as BiaMessage);
+  }
+
+  private handleMessage(value: BiaMessage) {
+    switch (value.messageType) {
+      case MESSAGE_TYPE_REPLY_SERVERS: {
+        this.parseServers(value.message);
+        break;
+      }
+      case MESSAGE_TYPE_REPLY_SERVER_CHANNELS: {
+        this.parseServerChannels(value.message);
+        break;
+      }
+      case MESSAGE_TYPE_REPLY_SERVER_USER_GROUP: {
+        this.parseServerUserGroups(value.message);
+        break;
+      }
+      case MESSAGE_TYPE_TEXT: {
+        this.parseTextMessage(value);
+        break;
+      }
+      case MESSAGE_TYPE_SERVER_INVITE: {
+        this.parseInviteToServerMessage(value);
+        break;
+      }
+      case MESSAGE_TYPE_PLAYER_JOIN_CHANNEL:
+      case MESSAGE_TYPE_PLAYER_LEFT_CHANNEL: {
+        this.parsePlayerToChannelMessage(value);
+        break;
+      }
+      default: {
+        break;
+      }
     }
   }
 
@@ -118,6 +157,10 @@ export class MainComponent implements OnInit, OnDestroy {
   private parseServerChannels(message: number[]) {
     const channelData = JSON.parse(byteArray2Str(message)) as ServerChannelWrap;
     this.serverInfoService.appendChannels(channelData.serverId, channelData.channels);
+    console.log(channelData);
+    if (!!channelData.channelUsers) {
+      this.wsConnService.initUserInChannel(channelData.channelUsers);
+    }
   }
 
   private parseTextMessage(value: BiaMessage) {
@@ -131,5 +174,23 @@ export class MainComponent implements OnInit, OnDestroy {
 
   private parseInviteToServerMessage(value: BiaMessage) {
     this.wsConnService.addFromUserMessage(value);
+  }
+
+  private parsePlayerToChannelMessage(value: BiaMessage) {
+    switch (value.messageType) {
+      case MESSAGE_TYPE_PLAYER_JOIN_CHANNEL: {
+        this.wsConnService.addUserToChannel(value);
+        break;
+      }
+      case MESSAGE_TYPE_PLAYER_LEFT_CHANNEL: {
+        this.wsConnService.removeUserInChannel(
+          (value.messageTo as MessageToServerChannel).channelId,
+          (value.messageFrom as MessageFromUser).userId);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
   }
 }

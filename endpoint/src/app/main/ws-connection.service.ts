@@ -1,11 +1,11 @@
 import {EventEmitter, Injectable} from '@angular/core';
-import {BiaMessageWebsocketSubject, str2ByteArray, utf8ByteToUnicodeStr} from './bia-message-websocket-subject';
+import {BiaMessageWebsocketSubject, byteArray2Str, str2ByteArray, utf8ByteToUnicodeStr} from './bia-message-websocket-subject';
 import {AuthService} from '../auth/auth.service';
-import {BiaMessage, MESSAGE_FROM_USER, MESSAGE_TYPE_SERVER_INVITE, MessageFromUser, MessageTo, MessageToServerChannel} from './bia-message';
+import {BiaMessage, MessageFromUser, MessageToServerChannel} from './bia-message';
 import {merge, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {environment} from '../../environments/environment';
-import {InviteToServerWrap} from './invite-to-server-wrap';
+import {ServerUser} from '../server/chat-server-users';
 
 function convertBase64ToBinary(base64) {
   const raw = window.atob(base64);
@@ -29,6 +29,9 @@ export class WsConnectionService {
 
   private fromUserMessages: Map<number, BiaMessage[]> = new Map<number, BiaMessage[]>();
   private fromUserMessagesChange = new EventEmitter<Map<number, BiaMessage[]>>();
+
+  private inChannelPlayers: Map<number, ServerUser[]> = new Map<number, ServerUser[]>();
+  private inChannelPlayersChange = new EventEmitter<Map<number, ServerUser[]>>();
 
   constructor(private authService: AuthService) {
   }
@@ -137,7 +140,7 @@ export class WsConnectionService {
   }
 
   getFromUserMessageUsers(): Observable<MessageFromUser[]> {
-    const message = new InviteToServerWrap();
+    /*const message = new InviteToServerWrap();
     message.inviteId = 'uid1';
     message.toServer = {
       id: 1,
@@ -157,12 +160,81 @@ export class WsConnectionService {
         time: new Date().getTime(),
         message: str2ByteArray(JSON.stringify(message))
       }
-    ]);
+    ]);*/
     const messageChangeObv = this.fromUserMessagesChange.pipe(
       map(messages => {
         return this.mapFromUserMessageUsers(messages);
       })
     );
     return merge(of(this.mapFromUserMessageUsers(this.fromUserMessages)), messageChangeObv);
+  }
+
+  initUserInChannel(channelUsers: { [key: string]: ServerUser[] }) {
+    // tslint:disable-next-line:forin
+    for (const channelIdStr in channelUsers) {
+      const channelId = parseInt(channelIdStr, 10);
+      this.inChannelPlayers.set(channelId, channelUsers[channelIdStr]);
+    }
+  }
+
+  addUserToChannel(value: BiaMessage) {
+    const messageTo = value.messageTo as MessageToServerChannel;
+    let users;
+    if (!this.inChannelPlayers.has(messageTo.channelId)) {
+      users = [];
+      this.inChannelPlayers.set(messageTo.channelId, users);
+    } else {
+      users = this.inChannelPlayers.get(messageTo.channelId);
+    }
+    const user = JSON.parse(byteArray2Str(value.message)) as ServerUser;
+    const findIdx = users.findIndex(res => {
+      return res.id === user.id;
+    });
+    if (findIdx !== -1) {
+      users.splice(findIdx, 1, user);
+    } else {
+      users.push(user);
+    }
+    this.inChannelPlayersChange.emit(this.inChannelPlayers);
+  }
+
+  getUserInChannel(userId: number): number {
+    let players;
+    for (const channelId of this.inChannelPlayers.keys()) {
+      players = this.inChannelPlayers.get(channelId);
+      if (!!players && players.length > 0) {
+        const idx = players.findIndex(value => value.id === userId);
+        if (idx !== -1) {
+          return channelId;
+        }
+      }
+    }
+    return null;
+  }
+
+  getUsersOfChannel(channelId: number): Observable<ServerUser[]> {
+    const messageChangeObv = this.inChannelPlayersChange.pipe(
+      map(users => {
+        if (users.has(channelId)) {
+          return users.get(channelId);
+        }
+        return null;
+      })
+    );
+    if (this.inChannelPlayers.has(channelId)) {
+      return merge(of(this.inChannelPlayers.get(channelId)), messageChangeObv);
+    }
+    return messageChangeObv;
+  }
+
+  removeUserInChannel(channelId: number, userId: number) {
+    if (this.inChannelPlayers.has(channelId)) {
+      const users = this.inChannelPlayers.get(channelId);
+      const idx = users.findIndex(value => value.id === userId);
+      if (idx !== -1) {
+        users.splice(idx, 1);
+      }
+      this.inChannelPlayersChange.emit(this.inChannelPlayers);
+    }
   }
 }

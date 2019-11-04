@@ -137,7 +137,7 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
   public connectionStatus: Observable<boolean>;
   private socket: WebSocketSubject<T>;
   private reconnectInterval = 5000;
-  private reconnectAttempts = 10;
+  private reconnectAttempts = Number.MAX_VALUE;
   isReady = false;
   ready = new EventEmitter<boolean>();
 
