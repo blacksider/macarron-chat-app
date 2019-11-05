@@ -234,5 +234,8 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
     super.complete();
     this.unSubscribe.next();
     this.unSubscribe.complete();
+    if (this.socket) {
+      this.socket.unsubscribe();
+    }
   }
 }

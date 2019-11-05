@@ -26,6 +26,8 @@ export class MessageToServerChannel extends MessageTo {
   channelId: number;
 }
 
+export const MESSAGE_TYPE_START_CHAT = -1;
+
 export const MESSAGE_TYPE_TEXT = 1000;
 export const MESSAGE_TYPE_IMG = 1001;
 

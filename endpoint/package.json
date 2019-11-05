@@ -10,7 +10,7 @@
     "postinstall": "npm run postinstall:electron && electron-builder install-app-deps",
     "postinstall:web": "node postinstall-web",
     "postinstall:electron": "node postinstall",
-    "ng:serve": "ng serve --proxy-config proxy.conf.json",
+    "ng:serve": "ng serve",
     "electron:serve-tsc": "tsc -p tsconfig-serve.json",
     "electron:serve": "wait-on http-get://localhost:4200/ && npm run electron:serve-tsc && electron . --serve",
     "electron:windows": "electron-packager . endpoint --ignore=/node_modules --ignore=/e2e --ignore=/.idea --ignore=/*.ts --ignore=/*.md --ignore=/postinstall*.* --ignore=/browserslist --ignore=/.editorconfig --ignore=/src --platform=win32 --arch=x64 --icon=./dist/endpoint/favicon.ico --no-prune --overwrite",

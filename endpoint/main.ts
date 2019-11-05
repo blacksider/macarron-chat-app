@@ -33,8 +33,7 @@ function createWindow() {
       webPreferences: {
         nodeIntegration: true,
       },
-      // TODO will open later
-      // frame: false
+      frame: false
     });
     win.loadURL(url.format({
       pathname: path.join(__dirname, 'dist/endpoint/index.html'),
@@ -58,7 +57,6 @@ function createWindow() {
 }
 
 try {
-
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   // Some APIs can only be used after this event occurs.
@@ -81,7 +79,11 @@ try {
     }
   });
 
+  app.on('certificate-error', (event, webContents, urlStr, error, certificate, callback) => {
+    // trust self signed certificate
+    event.preventDefault();
+    callback(true);
+  });
 } catch (e) {
   // Catch Error
-  // throw e;
 }

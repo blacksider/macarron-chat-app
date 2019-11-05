@@ -81,7 +81,7 @@
       </div>
       <div class="group-users">
         <div *ngFor="let user of group.users">
-          <div class="group-user">
+          <div class="group-user" (mousedown)="handleMouseClickOnUser($event, user)">
             <img [src]="'data:image/png;base64,' + user.user.avatar">
             <span class="username">{{user.user.username}}</span>
           </div>
@@ -93,3 +93,6 @@
     </div>
   </div>
 </div>
+<app-click-user-menu *ngIf="showClickUserMenu"
+                     [position]="userMenuOnPos"
+                     [user]="userMenuOnUser"></app-click-user-menu>

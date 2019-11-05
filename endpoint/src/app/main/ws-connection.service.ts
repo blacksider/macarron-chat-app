@@ -1,7 +1,7 @@
 import {EventEmitter, Injectable} from '@angular/core';
 import {BiaMessageWebsocketSubject, byteArray2Str, str2ByteArray, utf8ByteToUnicodeStr} from './bia-message-websocket-subject';
 import {AuthService} from '../auth/auth.service';
-import {BiaMessage, MessageFromUser, MessageToServerChannel} from './bia-message';
+import {BiaMessage, MESSAGE_TYPE_START_CHAT, MessageFromUser, MessageToServerChannel} from './bia-message';
 import {merge, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {environment} from '../../environments/environment';
@@ -37,7 +37,7 @@ export class WsConnectionService {
   }
 
   connectGlobalSubject(token: string): BiaMessageWebsocketSubject<BiaMessage> {
-    const url = `ws://${environment.wsAddr}/ws/connect`;
+    const url = `${environment.wsAddr}/ws/connect`;
     this.globalSocketSubject = new BiaMessageWebsocketSubject<BiaMessage>(url, token, this.authService, null, e => {
       // default received data is encoded by utf8, need to decode to unicode str
       const arr = new Int8Array(e.data);
@@ -93,14 +93,32 @@ export class WsConnectionService {
     return messageChangeObv;
   }
 
-  addFromUserMessage(value: BiaMessage) {
-    const messageFrom = value.messageFrom as MessageFromUser;
+  addFromUserStartChatMessage(tempMessageFrom: MessageFromUser) {
+    const tempMessage = new BiaMessage();
+    tempMessage.messageType = MESSAGE_TYPE_START_CHAT;
+    tempMessage.messageFrom = tempMessageFrom;
+
     let messages;
-    if (!this.fromUserMessages.has(messageFrom.userId)) {
-      messages = [];
-      this.fromUserMessages.set(messageFrom.userId, messages);
+    if (this.fromUserMessages.has(tempMessageFrom.userId)) {
+      messages = this.fromUserMessages.get(tempMessageFrom.userId);
+      if (messages.length > 0 && messages[0].messageFrom['userId'] === tempMessageFrom.userId) {
+        return;
+      }
     } else {
-      messages = this.fromUserMessages.get(messageFrom.userId);
+      messages = [];
+      this.fromUserMessages.set(tempMessageFrom.userId, messages);
+    }
+    messages.push(tempMessage);
+    this.fromUserMessagesChange.emit(this.fromUserMessages);
+  }
+
+  addFromUserMessage(value: BiaMessage, fromUserId) {
+    let messages;
+    if (!this.fromUserMessages.has(fromUserId)) {
+      messages = [];
+      this.fromUserMessages.set(fromUserId, messages);
+    } else {
+      messages = this.fromUserMessages.get(fromUserId);
     }
     messages.push(value);
     this.fromUserMessagesChange.emit(this.fromUserMessages);
@@ -140,27 +158,6 @@ export class WsConnectionService {
   }
 
   getFromUserMessageUsers(): Observable<MessageFromUser[]> {
-    /*const message = new InviteToServerWrap();
-    message.inviteId = 'uid1';
-    message.toServer = {
-      id: 1,
-      serverName: 'test',
-      avatar: ''
-    };
-    message.userId = 1;
-    this.fromUserMessages.set(1, [
-      {
-        messageFrom: {
-          type: MESSAGE_FROM_USER,
-          userId: 1,
-          username: 'test'
-        } as MessageFromUser,
-        messageType: MESSAGE_TYPE_SERVER_INVITE,
-        messageTo: new MessageTo(),
-        time: new Date().getTime(),
-        message: str2ByteArray(JSON.stringify(message))
-      }
-    ]);*/
     const messageChangeObv = this.fromUserMessagesChange.pipe(
       map(messages => {
         return this.mapFromUserMessageUsers(messages);

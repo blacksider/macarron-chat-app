@@ -15,6 +15,7 @@ import com.macarron.chat.server.common.user.ServerUserDTO;
 import com.macarron.chat.server.config.AuthTokenHandShakeInterceptor;
 import com.macarron.chat.server.model.ServerUser;
 import com.macarron.chat.server.repository.ChatServerUserRepository;
+import com.macarron.chat.server.repository.ServerUserRepository;
 import com.macarron.chat.server.service.ChatServerChannelService;
 import com.macarron.chat.server.service.ChatServerService;
 import com.macarron.chat.server.service.ChatServerUserService;
@@ -36,6 +37,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,6 +52,7 @@ public class UserMessageServiceImpl implements UserMessageService {
     private ChatServerUserService serverUserService;
     private UserSessionService sessionService;
     private PlayerToChannelService playerToChannelService;
+    private ServerUserRepository userRepository;
 
     @Autowired
     public void setUserSessionService(UserSessionService userSessionService) {
@@ -86,6 +89,11 @@ public class UserMessageServiceImpl implements UserMessageService {
         this.playerToChannelService = playerToChannelService;
     }
 
+    @Autowired
+    public void setUserRepository(ServerUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public void handleMessage(WebSocketSession session,
                               BiaMessage messageData,
@@ -111,6 +119,11 @@ public class UserMessageServiceImpl implements UserMessageService {
                 this.resolveVoiceRTCConnectionRequirement(session, messageData);
                 break;
             }
+            case MessageConstants.MessageTypes.TYPE_ON_SCREEN_SHARE_REQUEST:
+            case MessageConstants.MessageTypes.TYPE_ON_SCREEN_SHARE_RESPONSE: {
+                this.resolveScreenShareMessage(session, messageData);
+                break;
+            }
             case MessageConstants.MessageTypes.TYPE_ON_PLAYER_JOIN_CHANNEL:
             case MessageConstants.MessageTypes.TYPE_ON_PLAYER_LEFT_CHANNEL: {
                 this.resolvePlayerToChannelMessage(session, messageData);
@@ -121,6 +134,14 @@ public class UserMessageServiceImpl implements UserMessageService {
                 break;
             }
         }
+    }
+
+    private void resolveScreenShareMessage(WebSocketSession session, BiaMessage messageData) {
+        Assert.isTrue(messageData.getMessageTo().getType().equals(MessageConstants.MessageToTypes.MESSAGE_TO_USER),
+                "Invalid message to data");
+        MessageToUser toUser = (MessageToUser) messageData.getMessageTo();
+        WebSocketSession toSession = userSessionService.getSessionByIdentifier(toUser.getUsername());
+        sendMessage(toSession, messageData);
     }
 
     private void resolvePlayerToChannelMessage(WebSocketSession session, BiaMessage messageData) {
@@ -203,6 +224,16 @@ public class UserMessageServiceImpl implements UserMessageService {
                     sendMessage(socketSession, messageData);
                 }
             }
+        } else if (MessageConstants.MessageToTypes.MESSAGE_TO_USER.equals(messageData.getMessageTo().getType())) {
+            Assert.isTrue(messageData.getMessageTo() instanceof MessageToUser,
+                    "Invalid data of type " + messageData.getMessageTo().getType());
+            MessageToUser toUser = (MessageToUser) messageData.getMessageTo();
+
+            Optional<ServerUser> userOpt = userRepository.findById(toUser.getUserId());
+            if (userOpt.isPresent()) {
+                WebSocketSession socketSession = userSessionService.getSessionByIdentifier(userOpt.get().getEmail());
+                sendMessage(socketSession, messageData);
+            }
         }
     }
 
@@ -216,10 +247,10 @@ public class UserMessageServiceImpl implements UserMessageService {
         Session httpSession = (Session) session.getAttributes().get(AuthTokenHandShakeInterceptor.KEY_SOCKET_SESSION);
         httpSession.setLastAccessedTime(Instant.now());
 
-        log.info("Write to {}", session.getId());
+        log.debug("Write to {}", session.getId());
         try {
             byte[] dataBytes = om.writeValueAsString(messageData).getBytes();
-            log.info("write bytes: {}", Arrays.toString(dataBytes));
+            log.debug("write bytes: {}", Arrays.toString(dataBytes));
             session.sendMessage(new BinaryMessage(dataBytes));
         } catch (JsonProcessingException e) {
             log.error("Failed to parse message data", e);

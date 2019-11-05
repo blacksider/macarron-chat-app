@@ -6,6 +6,7 @@ import {WsConnectionService} from '../ws-connection.service';
 import {
   BiaMessage,
   MESSAGE_FROM_USER,
+  MESSAGE_TO_SERVER_CHANNEL,
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVERS,
   MESSAGE_TYPE_PLAYER_JOIN_CHANNEL,
@@ -14,7 +15,7 @@ import {
   MESSAGE_TYPE_REPLY_SERVER_USER_GROUP,
   MESSAGE_TYPE_REPLY_SERVERS,
   MESSAGE_TYPE_SERVER_INVITE,
-  MESSAGE_TYPE_TEXT,
+  MESSAGE_TYPE_TEXT, MessageFrom,
   MessageFromUser,
   MessageToServerChannel,
   MessageToUser
@@ -157,14 +158,17 @@ export class MainComponent implements OnInit, OnDestroy {
   private parseServerChannels(message: number[]) {
     const channelData = JSON.parse(byteArray2Str(message)) as ServerChannelWrap;
     this.serverInfoService.appendChannels(channelData.serverId, channelData.channels);
-    console.log(channelData);
     if (!!channelData.channelUsers) {
       this.wsConnService.initUserInChannel(channelData.channelUsers);
     }
   }
 
   private parseTextMessage(value: BiaMessage) {
-    this.wsConnService.addChannelMessage(value);
+    if (value.messageTo.type === MESSAGE_TO_SERVER_CHANNEL) {
+      this.wsConnService.addChannelMessage(value);
+    } else if (value.messageTo.type === MESSAGE_TO_USER) {
+      this.wsConnService.addFromUserMessage(value, (value.messageFrom as MessageFromUser).userId);
+    }
   }
 
   private parseServerUserGroups(message: number[]) {
@@ -173,7 +177,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private parseInviteToServerMessage(value: BiaMessage) {
-    this.wsConnService.addFromUserMessage(value);
+    this.wsConnService.addFromUserMessage(value, (value.messageFrom as MessageFromUser).userId);
   }
 
   private parsePlayerToChannelMessage(value: BiaMessage) {

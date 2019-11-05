@@ -23,7 +23,7 @@ import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-import {ChatServerUserGroup, SERVER_USER_OWNER} from '../chat-server-users';
+import {ChatServerUser, ChatServerUserGroup, SERVER_USER_OWNER} from '../chat-server-users';
 import {BsModalRef, BsModalService} from 'ngx-bootstrap';
 import {AddChannelComponent} from '../add-channel/add-channel.component';
 import {AddUserGroupComponent} from '../add-user-group/add-user-group.component';
@@ -63,6 +63,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   addGroupModalRef: BsModalRef;
   inviteUserModalRef: BsModalRef;
   getUsersOfChannel = this.connService.getUsersOfChannel.bind(this.connService);
+  showClickUserMenu = false;
+  userMenuOnPos: any;
+  userMenuOnUser: ChatServerUser;
 
   constructor(private svrService: ServerInfoService,
               private connService: WsConnectionService,
@@ -149,6 +152,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           }
         });
     });
+    document.addEventListener('click', this.onClickOutside.bind(this));
   }
 
   ngOnDestroy(): void {
@@ -165,6 +169,11 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     if (this.inviteUserModalRef) {
       this.inviteUserModalRef.hide();
     }
+    document.removeEventListener('click', this.onClickOutside.bind(this));
+  }
+
+  onClickOutside(ev) {
+    this.showClickUserMenu = false;
   }
 
   parseTextMessage(message: number[]) {
@@ -401,5 +410,22 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       messageType: MESSAGE_TYPE_ON_PLAYER_LEFT_CHANNEL,
       message: []
     } as BiaMessage);
+  }
+
+  handleMouseClickOnUser($event: MouseEvent, user: ChatServerUser) {
+    if (user.user.id === this.authInfo.userId) {
+      return;
+    }
+    $event.stopPropagation();
+    if ($event.button === 2) {
+      this.userMenuOnPos = {};
+      // const nodeElem = this.dragBoundary.nativeElement;
+      this.userMenuOnPos = {
+        x: $event.clientX - 60,
+        y: $event.clientY
+      };
+      this.userMenuOnUser = user;
+      this.showClickUserMenu = true;
+    }
   }
 }

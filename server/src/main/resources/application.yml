@@ -1,3 +1,11 @@
+server:
+  port: 8080
+  ssl:
+    key-store: classpath:server.p12
+    key-store-password: charserverpwd
+    key-store-type: PKCS12
+    key-alias: server
+
 spring:
   application:
     name: server
@@ -59,3 +67,7 @@ spring:
     type: redis
     redis:
       key-prefix: 'server:cache:'
+
+logging:
+  level:
+    com.macarron.chat.server: debug

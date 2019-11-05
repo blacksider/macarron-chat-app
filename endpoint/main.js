@@ -33,6 +33,7 @@ function createWindow() {
             webPreferences: {
                 nodeIntegration: true,
             },
+            frame: false
         });
         win.loadURL(url.format({
             pathname: path.join(__dirname, 'dist/endpoint/index.html'),
@@ -71,9 +72,14 @@ try {
             createWindow();
         }
     });
+    electron_1.app.on('certificate-error', function (event, webContents, urlStr, error, certificate, callback) {
+        // On certificate error we disable default behaviour (stop loading the page)
+        // and we then say "it is all fine - true" to the callback
+        event.preventDefault();
+        callback(true);
+    });
 }
 catch (e) {
     // Catch Error
-    // throw e;
 }
 //# sourceMappingURL=main.js.map

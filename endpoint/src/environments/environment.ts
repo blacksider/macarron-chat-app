@@ -4,8 +4,8 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:4200',
-  wsAddr: 'localhost:4200'
+  apiUrl: 'https://localhost:8080',
+  wsAddr: 'wss://localhost:8080'
 };
 
 /*
