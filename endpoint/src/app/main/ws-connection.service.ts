@@ -17,6 +17,41 @@ function convertBase64ToBinary(base64) {
   return array;
 }
 
+export class RequestForScreenShare {
+  requiring: boolean;
+  userId: number;
+  username: string;
+  at: Date;
+  timeoutHandle: any;
+
+  static require(userId: number, username: string, onTimeout?): RequestForScreenShare {
+    const data = new RequestForScreenShare();
+    data.requiring = true;
+    data.userId = userId;
+    data.username = username;
+    data.at = new Date();
+    data.timeoutHandle = setTimeout(() => {
+      data.requiring = false;
+      if (onTimeout) {
+        onTimeout();
+      }
+    }, 30000);
+    return data;
+  }
+}
+
+export class ResponseForScreenShare {
+  userId: number;
+  at: Date;
+
+  static accept(userId: number): ResponseForScreenShare {
+    const data = new ResponseForScreenShare();
+    data.userId = userId;
+    data.at = new Date();
+    return data;
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -32,6 +67,9 @@ export class WsConnectionService {
 
   private inChannelPlayers: Map<number, ServerUser[]> = new Map<number, ServerUser[]>();
   private inChannelPlayersChange = new EventEmitter<Map<number, ServerUser[]>>();
+
+  requestForScreenShare: RequestForScreenShare;
+  responseForScreenShare: ResponseForScreenShare;
 
   constructor(private authService: AuthService) {
   }
@@ -94,10 +132,6 @@ export class WsConnectionService {
   }
 
   addFromUserStartChatMessage(tempMessageFrom: MessageFromUser) {
-    const tempMessage = new BiaMessage();
-    tempMessage.messageType = MESSAGE_TYPE_START_CHAT;
-    tempMessage.messageFrom = tempMessageFrom;
-
     let messages;
     if (this.fromUserMessages.has(tempMessageFrom.userId)) {
       messages = this.fromUserMessages.get(tempMessageFrom.userId);
@@ -108,6 +142,9 @@ export class WsConnectionService {
       messages = [];
       this.fromUserMessages.set(tempMessageFrom.userId, messages);
     }
+    const tempMessage = new BiaMessage();
+    tempMessage.messageType = MESSAGE_TYPE_START_CHAT;
+    tempMessage.messageFrom = tempMessageFrom;
     messages.push(tempMessage);
     this.fromUserMessagesChange.emit(this.fromUserMessages);
   }
@@ -232,6 +269,21 @@ export class WsConnectionService {
         users.splice(idx, 1);
       }
       this.inChannelPlayersChange.emit(this.inChannelPlayers);
+    }
+  }
+
+  setOnRequestForScreenShare(userId: number, username: string) {
+    if (this.requestForScreenShare) {
+      clearTimeout(this.requestForScreenShare.timeoutHandle);
+    }
+    this.requestForScreenShare = RequestForScreenShare.require(userId, username);
+  }
+
+  acceptResponseForScreenShare(userId: number, accept: boolean) {
+    if (accept) {
+      this.responseForScreenShare = ResponseForScreenShare.accept(userId);
+    } else {
+      this.responseForScreenShare = null;
     }
   }
 }

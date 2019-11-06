@@ -4,7 +4,7 @@ import {AuthService} from '../auth/auth.service';
 import {distinctUntilChanged, share, takeUntil, takeWhile} from 'rxjs/operators';
 import {EventEmitter} from '@angular/core';
 
-export function strToUtf8Bytes(str) {
+export function strToUtf8Bytes(str: string): number[] {
   const bytes = [];
   const len = str.length;
   for (let i = 0; i < len; ++i) {
@@ -29,7 +29,7 @@ export function strToUtf8Bytes(str) {
   return bytes;
 }
 
-export function utf8ByteToUnicodeStr(utf8Bytes) {
+export function utf8ByteToUnicodeStr(utf8Bytes: ArrayLike<number>): string {
   let unicodeStr = '';
   for (let pos = 0; pos < utf8Bytes.length;) {
     const flag = utf8Bytes[pos];
@@ -141,6 +141,8 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
   isReady = false;
   ready = new EventEmitter<boolean>();
 
+  id: number;
+
   static defaultSerializer(value) {
     return str2ArrayBuffer(value);
   }
@@ -157,6 +159,7 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
     serializer?: (value: T) => any,
     deserializer?: (e: MessageEvent) => T) {
     super();
+    this.id = new Date().getTime() + Math.random();
     this.unSubscribe = new Subject();
     this.wsSubjectConfig = {
       url: '',
@@ -164,19 +167,10 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
       serializer: serializer ? serializer : BiaMessageWebsocketSubject.defaultSerializer,
       deserializer: deserializer ? deserializer : BiaMessageWebsocketSubject.defaultDeserializer,
       closeObserver: {
-        next: () => {
-          this.socket = null;
-          this.connectionObserver.next(false);
-          this.isReady = false;
-          this.ready.emit(this.isReady);
-        }
+        next: this.onClose.bind(this)
       },
       openObserver: {
-        next: () => {
-          this.connectionObserver.next(true);
-          this.isReady = true;
-          this.ready.emit(this.isReady);
-        }
+        next: this.onOpen.bind(this)
       }
     };
     this.connectionStatus = new Observable<boolean>((observer) => {
@@ -192,6 +186,19 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
         this.reconnect();
       }
     });
+  }
+
+  private onOpen() {
+    this.connectionObserver.next(true);
+    this.isReady = true;
+    this.ready.emit(this.isReady);
+  }
+
+  private onClose() {
+    this.socket = null;
+    this.connectionObserver.next(false);
+    this.isReady = false;
+    this.ready.emit(this.isReady);
   }
 
   private connect(): void {

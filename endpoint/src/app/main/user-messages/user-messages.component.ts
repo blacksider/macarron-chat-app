@@ -1,9 +1,11 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {
   BiaMessage,
   MESSAGE_FROM_USER,
   MESSAGE_TO_USER,
+  MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST,
+  MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
   MESSAGE_TYPE_SERVER_INVITE,
   MESSAGE_TYPE_START_CHAT,
   MESSAGE_TYPE_TEXT,
@@ -20,6 +22,7 @@ import {takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
+import {RtcConnectionService} from '../rtc-connection.service';
 
 const KEYCODE_ENTER = 'Enter';
 const KEYCODE_Shift = 'ShiftLeft';
@@ -41,6 +44,8 @@ export class UserMessagesComponent implements OnInit {
   fromUserMessageSub: any;
   messageTypes = {
     inviteToServer: MESSAGE_TYPE_SERVER_INVITE,
+    requestScreenShare: MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST,
+    responseScreenShare: MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
     text: MESSAGE_TYPE_TEXT
   };
   lastPressedKey: KeyDownData;
@@ -54,6 +59,8 @@ export class UserMessagesComponent implements OnInit {
               private svrService: ServerInfoService,
               private toastr: ToastrService,
               private authService: AuthService,
+              private rtcConnectionService: RtcConnectionService,
+              private router: Router,
               private wsConnService: WsConnectionService) {
   }
 
@@ -71,14 +78,27 @@ export class UserMessagesComponent implements OnInit {
         this.fromUserMessageSub.unsubscribe();
       }
       this.fromUserMessage = [];
-      this.fromUserMessageSub = this.wsConnService.getFromUserMessage(userId).subscribe(messages => {
-        this.messageFrom = messages[0].messageFrom as MessageFromUser;
-        this.fromUserMessage = messages.filter(m => m.messageType !== MESSAGE_TYPE_START_CHAT);
-        setTimeout(() => {
-          const elem = this.messageContainer.nativeElement;
-          elem.scrollTop = elem.scrollHeight - elem.clientHeight;
+      this.wsConnService.getFromUserMessageUsers()
+        .pipe(
+          takeUntil(this.unSubscribe)
+        )
+        .subscribe(users => {
+          if (users.findIndex(u => u.userId === userId) === -1) {
+            this.router.navigate(['/app/main/setting']);
+          }
         });
-      });
+      this.fromUserMessageSub = this.wsConnService.getFromUserMessage(userId)
+        .pipe(
+          takeUntil(this.unSubscribe)
+        )
+        .subscribe(messages => {
+          this.messageFrom = messages[0].messageFrom as MessageFromUser;
+          this.fromUserMessage = messages.filter(m => m.messageType !== MESSAGE_TYPE_START_CHAT);
+          setTimeout(() => {
+            const elem = this.messageContainer.nativeElement;
+            elem.scrollTop = elem.scrollHeight - elem.clientHeight;
+          });
+        });
     });
 
     this.wsConnService.isReady()
@@ -170,5 +190,28 @@ export class UserMessagesComponent implements OnInit {
 
   parseTextMessage(message: number[]) {
     return byteArray2Str(message);
+  }
+
+  resolveScreenShareInvite(accept: boolean) {
+    const messageData = {
+      messageFrom: {
+        type: MESSAGE_FROM_USER,
+        userId: this.authInfo.userId,
+        username: this.authInfo.username
+      } as MessageFromUser,
+      time: new Date().getTime(),
+      messageTo: {
+        type: MESSAGE_TO_USER,
+        userId: this.messageFrom.userId,
+        username: this.messageFrom.username
+      } as MessageToUser,
+      messageType: MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
+      message: strToUtf8Bytes('' + (accept ? 0 : 1))
+    } as BiaMessage;
+    this.globalSocketSubject.send(messageData);
+    this.wsConnService.acceptResponseForScreenShare(this.messageFrom.userId, accept);
+    if (accept) {
+      this.rtcConnectionService.createPeerConnection(false);
+    }
   }
 }

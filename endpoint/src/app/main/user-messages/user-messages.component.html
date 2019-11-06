@@ -6,7 +6,28 @@
           <span class="invite-notify">向您发送了一个邀请，邀请您到服务器：<b>{{getInviteToServerData(message)}}</b></span>
           <div class="invite-btn">
             <button type="button" class="btn btn-primary btm-sm" (click)="resolveInvite(true, message)">接受</button>
-            <button type="button" class="btn btn-warning btm-sm" (click)="resolveInvite(true, message)">拒绝</button>
+            <button type="button" class="btn btn-warning btm-sm" (click)="resolveInvite(false, message)">拒绝</button>
+          </div>
+        </div>
+        <div *ngSwitchCase="messageTypes.requestScreenShare">
+          <div *ngIf="message.messageFrom['userId'] === authInfo.userId">
+            <span class="invite-notify">申请分享桌面</span>
+          </div>
+          <div *ngIf="message.messageTo['userId'] === authInfo.userId">
+            <span class="invite-notify">申请向您分享桌面</span>
+            <div class="invite-btn">
+              <button type="button" class="btn btn-primary btm-sm" (click)="resolveScreenShareInvite(true)">接受</button>
+              <button type="button" class="btn btn-warning btm-sm" (click)="resolveScreenShareInvite(false)">拒绝</button>
+            </div>
+          </div>
+        </div>
+        <div *ngSwitchCase="messageTypes.responseScreenShare">
+          <div class="message-from">
+            <span class="user">{{message.messageFrom['username']}}</span>
+            <span class="time">{{message.time|date: 'yyyy-MM-dd HH:mm:ss'}}</span>
+          </div>
+          <div class="message-content">
+            {{parseTextMessage(message.message) == 0 ? '已接受' : '已拒绝'}}分享桌面
           </div>
         </div>
         <div *ngSwitchCase="messageTypes.text">

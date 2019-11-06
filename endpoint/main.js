@@ -73,8 +73,7 @@ try {
         }
     });
     electron_1.app.on('certificate-error', function (event, webContents, urlStr, error, certificate, callback) {
-        // On certificate error we disable default behaviour (stop loading the page)
-        // and we then say "it is all fine - true" to the callback
+        // trust self signed certificate
         event.preventDefault();
         callback(true);
     });

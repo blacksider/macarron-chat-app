@@ -140,8 +140,11 @@ public class UserMessageServiceImpl implements UserMessageService {
         Assert.isTrue(messageData.getMessageTo().getType().equals(MessageConstants.MessageToTypes.MESSAGE_TO_USER),
                 "Invalid message to data");
         MessageToUser toUser = (MessageToUser) messageData.getMessageTo();
-        WebSocketSession toSession = userSessionService.getSessionByIdentifier(toUser.getUsername());
-        sendMessage(toSession, messageData);
+        Optional<ServerUser> userOpt = userRepository.findById(toUser.getUserId());
+        if (userOpt.isPresent()) {
+            WebSocketSession socketSession = userSessionService.getSessionByIdentifier(userOpt.get().getEmail());
+            sendMessage(socketSession, messageData);
+        }
     }
 
     private void resolvePlayerToChannelMessage(WebSocketSession session, BiaMessage messageData) {
@@ -154,8 +157,11 @@ public class UserMessageServiceImpl implements UserMessageService {
         Assert.isTrue(messageData.getMessageTo().getType().equals(MessageConstants.MessageToTypes.MESSAGE_TO_USER),
                 "Invalid message to data");
         MessageToUser toUser = (MessageToUser) messageData.getMessageTo();
-        WebSocketSession toSession = userSessionService.getSessionByIdentifier(toUser.getUsername());
-        sendMessage(toSession, messageData);
+        Optional<ServerUser> userOpt = userRepository.findById(toUser.getUserId());
+        if (userOpt.isPresent()) {
+            WebSocketSession socketSession = userSessionService.getSessionByIdentifier(userOpt.get().getEmail());
+            sendMessage(socketSession, messageData);
+        }
     }
 
     private void resolveGetServerUserGroup(WebSocketSession session, BiaMessage messageData) {

@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
 import {BiaMessageWebsocketSubject, byteArray2Str} from '../bia-message-websocket-subject';
@@ -9,13 +9,16 @@ import {
   MESSAGE_TO_SERVER_CHANNEL,
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVERS,
+  MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST,
+  MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
+  MESSAGE_TYPE_ON_VOICE_RTC_CONN,
   MESSAGE_TYPE_PLAYER_JOIN_CHANNEL,
   MESSAGE_TYPE_PLAYER_LEFT_CHANNEL,
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
   MESSAGE_TYPE_REPLY_SERVER_USER_GROUP,
   MESSAGE_TYPE_REPLY_SERVERS,
   MESSAGE_TYPE_SERVER_INVITE,
-  MESSAGE_TYPE_TEXT, MessageFrom,
+  MESSAGE_TYPE_TEXT,
   MessageFromUser,
   MessageToServerChannel,
   MessageToUser
@@ -32,6 +35,7 @@ import {interval, Observable, Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../../environments/environment';
+import {RtcConnectionService} from '../rtc-connection.service';
 
 @Component({
   selector: 'app-main',
@@ -39,6 +43,7 @@ import {environment} from '../../../environments/environment';
   styleUrls: ['./main.component.less']
 })
 export class MainComponent implements OnInit, OnDestroy {
+  @ViewChild('screenShare', {static: true}) screenShare: ElementRef<HTMLDivElement>;
   private ngUnSubscribe = new Subject();
   private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   servers: ChatServer[];
@@ -52,11 +57,13 @@ export class MainComponent implements OnInit, OnDestroy {
               private http: HttpClient,
               private serverInfoService: ServerInfoService,
               private electron: ElectronService,
+              private rtcConnectionService: RtcConnectionService,
               private router: Router,
               private authService: AuthService) {
   }
 
   ngOnInit(): void {
+    this.rtcConnectionService.setScreenShareElement(this.screenShare);
     this.authInfo = this.authService.authInfo;
 
     this.keepAliveIntervalObv = interval(this.keepAliveInterval);
@@ -128,6 +135,7 @@ export class MainComponent implements OnInit, OnDestroy {
         break;
       }
       case MESSAGE_TYPE_TEXT: {
+        console.log(this.wsConnService.getGlobalSocketSubject().id);
         this.parseTextMessage(value);
         break;
       }
@@ -140,7 +148,17 @@ export class MainComponent implements OnInit, OnDestroy {
         this.parsePlayerToChannelMessage(value);
         break;
       }
+      case MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST:
+      case MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE: {
+        this.parseScreenShareMessage(value);
+        break;
+      }
+      case MESSAGE_TYPE_ON_VOICE_RTC_CONN: {
+        this.rtcConnectionService.parseScreenShareRTCMessage(value);
+        break;
+      }
       default: {
+        console.log(value);
         break;
       }
     }
@@ -190,6 +208,35 @@ export class MainComponent implements OnInit, OnDestroy {
         this.wsConnService.removeUserInChannel(
           (value.messageTo as MessageToServerChannel).channelId,
           (value.messageFrom as MessageFromUser).userId);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  parseScreenShareMessage(value: BiaMessage) {
+    switch (value.messageType) {
+      case MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST: {
+        this.wsConnService.addFromUserMessage(value, (value.messageFrom as MessageFromUser).userId);
+        break;
+      }
+      case MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE: {
+        this.wsConnService.addFromUserMessage(value, (value.messageFrom as MessageFromUser).userId);
+
+        const request = this.wsConnService.requestForScreenShare;
+        if (request && request.requiring && request.userId === (value.messageFrom as MessageFromUser).userId) {
+          const data = parseInt(byteArray2Str(value.message), 10);
+          if (data === 0) {
+            clearTimeout(request.timeoutHandle);
+            this.rtcConnectionService.setLocalStream();
+            this.rtcConnectionService.createPeerConnection(true);
+          } else {
+            request.requiring = false;
+            clearTimeout(request.timeoutHandle);
+          }
+        }
         break;
       }
       default: {
