@@ -1,4 +1,4 @@
-import {interval, Observable, Observer, Subject} from 'rxjs';
+import {interval, merge, Observable, Observer, of, Subject} from 'rxjs';
 import {WebSocketSubject, WebSocketSubjectConfig} from 'rxjs/webSocket';
 import {AuthService} from '../auth/auth.service';
 import {distinctUntilChanged, share, takeUntil, takeWhile} from 'rxjs/operators';
@@ -136,12 +136,11 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
   private connectionObserver: Observer<boolean>;
   public connectionStatus: Observable<boolean>;
   private socket: WebSocketSubject<T>;
+
   private reconnectInterval = 5000;
   private reconnectAttempts = Number.MAX_VALUE;
-  isReady = false;
-  ready = new EventEmitter<boolean>();
-
-  id: number;
+  private isReady = false;
+  private ready = new EventEmitter<boolean>();
 
   static defaultSerializer(value) {
     return str2ArrayBuffer(value);
@@ -159,7 +158,6 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
     serializer?: (value: T) => any,
     deserializer?: (e: MessageEvent) => T) {
     super();
-    this.id = new Date().getTime() + Math.random();
     this.unSubscribe = new Subject();
     this.wsSubjectConfig = {
       url: '',
@@ -199,6 +197,13 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
     this.connectionObserver.next(false);
     this.isReady = false;
     this.ready.emit(this.isReady);
+  }
+
+  onReady(): Observable<boolean> {
+    if (this.isReady) {
+      return merge(of(this.isReady), this.ready);
+    }
+    return this.ready;
   }
 
   private connect(): void {

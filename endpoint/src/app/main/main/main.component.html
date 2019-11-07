@@ -1,4 +1,16 @@
-<div class="sidebar">
+<div class="full-w-title">
+  <app-title-bar></app-title-bar>
+</div>
+<div *ngIf="!ready" class="on-loading">
+  <div class="lds-ring">
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <div>正在加载</div>
+</div>
+<div class="sidebar" *ngIf="ready">
   <div class="user-info">
     <div class="avatar"></div>
   </div>
@@ -21,8 +33,7 @@
     </div>
   </div>
 </div>
-<div class="content">
-  <app-title-bar></app-title-bar>
+<div class="content" *ngIf="ready">
   <div class="user-label">
     <img [src]="'data:image/png;base64,' + authInfo.avatar">
     <span class="username">{{authInfo.username}}</span>
@@ -33,6 +44,8 @@
   </div>
 </div>
 <div class="screen-share" #screenShare>
+  <div class="options">
+  </div>
   <video id="local-stream"></video>
   <video id="remote-stream"></video>
 </div>

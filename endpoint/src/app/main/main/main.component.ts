@@ -1,7 +1,7 @@
 import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
-import {BiaMessageWebsocketSubject, byteArray2Str} from '../bia-message-websocket-subject';
+import {byteArray2Str} from '../bia-message-websocket-subject';
 import {WsConnectionService} from '../ws-connection.service';
 import {
   BiaMessage,
@@ -45,12 +45,12 @@ import {RtcConnectionService} from '../rtc-connection.service';
 export class MainComponent implements OnInit, OnDestroy {
   @ViewChild('screenShare', {static: true}) screenShare: ElementRef<HTMLDivElement>;
   private ngUnSubscribe = new Subject();
-  private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   servers: ChatServer[];
   authInfo: AuthInfo;
   bsModalRef: BsModalRef;
   private keepAliveIntervalObv: Observable<number>;
   private keepAliveInterval = 10000;
+  ready = false;
 
   constructor(private wsConnService: WsConnectionService,
               private modalService: BsModalService,
@@ -72,9 +72,13 @@ export class MainComponent implements OnInit, OnDestroy {
       .subscribe(_ => {
         this.doKeepAlive();
       });
+    this.wsConnService.onReady()
+      .pipe(takeUntil(this.ngUnSubscribe))
+      .subscribe(value => {
+        this.ready = value;
+      });
     this.authService.getAuthorizationToken().subscribe(token => {
-      this.globalSocketSubject = this.wsConnService.connectGlobalSubject(token);
-      this.globalSocketSubject.subscribe(value => {
+      this.wsConnService.connectGlobalSubject(token).subscribe(value => {
         this.handleMessage(value);
       });
       this.requireServers();
@@ -88,7 +92,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.globalSocketSubject.complete();
+    this.wsConnService.closeAll();
     if (this.bsModalRef) {
       this.bsModalRef.hide();
     }
@@ -103,7 +107,7 @@ export class MainComponent implements OnInit, OnDestroy {
   }
 
   private requireServers() {
-    this.globalSocketSubject.send({
+    this.wsConnService.getGlobalSocketSubject().send({
       time: new Date().getTime(),
       messageFrom: {
         type: MESSAGE_FROM_USER,
@@ -135,7 +139,6 @@ export class MainComponent implements OnInit, OnDestroy {
         break;
       }
       case MESSAGE_TYPE_TEXT: {
-        console.log(this.wsConnService.getGlobalSocketSubject().id);
         this.parseTextMessage(value);
         break;
       }
@@ -230,8 +233,10 @@ export class MainComponent implements OnInit, OnDestroy {
           const data = parseInt(byteArray2Str(value.message), 10);
           if (data === 0) {
             clearTimeout(request.timeoutHandle);
-            this.rtcConnectionService.setLocalStream();
-            this.rtcConnectionService.createPeerConnection(true);
+            this.rtcConnectionService.setLocalStream().then(() => {
+              this.rtcConnectionService.createPeerConnection(true).then(() => {
+              });
+            });
           } else {
             request.requiring = false;
             clearTimeout(request.timeoutHandle);

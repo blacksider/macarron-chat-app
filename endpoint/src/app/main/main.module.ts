@@ -9,6 +9,7 @@ import {SharedModule} from '../shared/shared.module';
 import {AddServerComponent} from './add-server/add-server.component';
 import {PopoverModule} from 'ngx-bootstrap';
 import {UserMessagesComponent} from './user-messages/user-messages.component';
+import {RtcConnectionService} from './rtc-connection.service';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,9 @@ import {UserMessagesComponent} from './user-messages/user-messages.component';
   entryComponents: [
     AddServerComponent
   ],
-  providers: []
+  providers: [
+    RtcConnectionService
+  ]
 })
 export class MainModule {
 }

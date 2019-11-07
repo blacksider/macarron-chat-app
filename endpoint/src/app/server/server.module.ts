@@ -8,7 +8,7 @@ import {BsDropdownModule, PopoverModule} from 'ngx-bootstrap';
 import {FormsModule} from '@angular/forms';
 import {SharedModule} from '../shared/shared.module';
 import {InviteUserComponent} from './invite-user/invite-user.component';
-import { ClickUserMenuComponent } from './click-user-menu/click-user-menu.component';
+import {ClickUserMenuComponent} from './click-user-menu/click-user-menu.component';
 
 @NgModule({
   declarations: [ServerInfoComponent, AddChannelComponent, AddUserGroupComponent, InviteUserComponent, ClickUserMenuComponent],
@@ -20,7 +20,8 @@ import { ClickUserMenuComponent } from './click-user-menu/click-user-menu.compon
     SharedModule,
     PopoverModule.forRoot()
   ],
-  providers: [],
+  providers: [
+  ],
   entryComponents: [
     AddChannelComponent,
     AddUserGroupComponent,

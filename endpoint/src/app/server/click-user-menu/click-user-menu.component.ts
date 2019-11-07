@@ -26,7 +26,6 @@ export class ClickUserMenuComponent implements OnInit, OnDestroy {
   @Input() user: ChatServerUser;
   authInfo: AuthInfo;
   private unSubscribe = new Subject();
-  private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
 
   constructor(private wsConnService: WsConnectionService,
               private authService: AuthService,
@@ -35,15 +34,6 @@ export class ClickUserMenuComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.authInfo = this.authService.authInfo;
-    this.wsConnService.isReady()
-      .pipe(
-        takeUntil(this.unSubscribe)
-      )
-      .subscribe(ready => {
-        if (ready) {
-          this.globalSocketSubject = this.wsConnService.getGlobalSocketSubject();
-        }
-      });
   }
 
   ngOnDestroy(): void {
@@ -84,7 +74,7 @@ export class ClickUserMenuComponent implements OnInit, OnDestroy {
     } as BiaMessage;
 
     this.wsConnService.addFromUserMessage(requestForScreenShare, this.user.user.id);
-    this.globalSocketSubject.send(requestForScreenShare);
+    this.wsConnService.getGlobalSocketSubject().send(requestForScreenShare);
     this.wsConnService.setOnRequestForScreenShare(this.user.user.id, this.user.user.username);
     this.router.navigate([`/app/main/user-message/${this.user.user.id}`]);
   }

@@ -13,7 +13,7 @@ import {
   MessageToUser
 } from '../bia-message';
 import {WsConnectionService} from '../ws-connection.service';
-import {BiaMessageWebsocketSubject, byteArray2Str, str2ByteArray, strToUtf8Bytes} from '../bia-message-websocket-subject';
+import {byteArray2Str, str2ByteArray, strToUtf8Bytes} from '../bia-message-websocket-subject';
 import {InviteToServerWrap} from '../invite-to-server-wrap';
 import {ServerInfoService} from '../../server/server-info.service';
 import {ResolveServerInvite} from '../resolve-server-invite';
@@ -51,7 +51,6 @@ export class UserMessagesComponent implements OnInit {
   lastPressedKey: KeyDownData;
   delta = 500;
   unSubscribe: Subject<any>;
-  private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   authInfo: AuthInfo;
   messageFrom: MessageFromUser;
 
@@ -100,16 +99,6 @@ export class UserMessagesComponent implements OnInit {
           });
         });
     });
-
-    this.wsConnService.isReady()
-      .pipe(
-        takeUntil(this.unSubscribe)
-      )
-      .subscribe(ready => {
-        if (ready) {
-          this.globalSocketSubject = this.wsConnService.getGlobalSocketSubject();
-        }
-      });
   }
 
   getInviteToServerData(message: BiaMessage) {
@@ -179,7 +168,7 @@ export class UserMessagesComponent implements OnInit {
       messageType: MESSAGE_TYPE_TEXT,
       message: strToUtf8Bytes(this.inputMsgControl.nativeElement.value)
     } as BiaMessage;
-    this.globalSocketSubject.send(messageData);
+    this.wsConnService.getGlobalSocketSubject().send(messageData);
 
     this.wsConnService.addFromUserMessage(Object.assign({}, messageData,
       {
@@ -208,10 +197,11 @@ export class UserMessagesComponent implements OnInit {
       messageType: MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
       message: strToUtf8Bytes('' + (accept ? 0 : 1))
     } as BiaMessage;
-    this.globalSocketSubject.send(messageData);
-    this.wsConnService.acceptResponseForScreenShare(this.messageFrom.userId, accept);
+    this.wsConnService.getGlobalSocketSubject().send(messageData);
+    this.wsConnService.acceptResponseForScreenShare(this.messageFrom.userId, this.messageFrom.username, accept);
     if (accept) {
-      this.rtcConnectionService.createPeerConnection(false);
+      this.rtcConnectionService.createPeerConnection(false).then(() => {
+      });
     }
   }
 }

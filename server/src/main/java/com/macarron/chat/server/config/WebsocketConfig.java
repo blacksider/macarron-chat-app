@@ -9,6 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
 @Configuration
 @EnableWebSocket
@@ -39,5 +40,13 @@ public class WebsocketConfig implements WebSocketConfigurer {
         registry.addHandler(userMessageHandler, "/ws/connect")
                 .addInterceptors(authTokenHandShakeInterceptor)
                 .setAllowedOrigins("*");
+    }
+
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setMaxTextMessageBufferSize(500000);
+        container.setMaxBinaryMessageBufferSize(500000);
+        return container;
     }
 }

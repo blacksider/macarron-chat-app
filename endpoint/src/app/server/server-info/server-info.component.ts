@@ -3,7 +3,7 @@ import {ServerInfoService} from '../server-info.service';
 import {ActivatedRoute} from '@angular/router';
 import {ChatServerChannel} from '../chat-server-channel';
 import {ChatServer} from '../chat-server';
-import {BiaMessageWebsocketSubject, byteArray2Str, strToUtf8Bytes} from '../../main/bia-message-websocket-subject';
+import {byteArray2Str, strToUtf8Bytes} from '../../main/bia-message-websocket-subject';
 import {
   BiaMessage,
   MESSAGE_FROM_USER,
@@ -47,7 +47,6 @@ class KeyDownData {
 export class ServerInfoComponent implements OnInit, OnDestroy {
   @ViewChild('inputMsg', {static: true}) inputMsgControl: ElementRef<HTMLTextAreaElement>;
   @ViewChild('messageContainer', {static: true}) messageContainer: ElementRef<any>;
-  private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
   serverInfo: ChatServer;
   channels: ChatServerChannel[];
   userGroups: ChatServerUserGroup[];
@@ -77,80 +76,75 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.route.paramMap.subscribe(paramMap => {
-      if (this.unSubscribe) {
-        this.unSubscribe.next();
-        this.unSubscribe.complete();
-        this.unSubscribe = null;
+    this.connService.onReady().subscribe(ready => {
+      if (ready) {
+        this.route.paramMap.subscribe(paramMap => {
+          if (this.unSubscribe) {
+            this.unSubscribe.next();
+            this.unSubscribe.complete();
+            this.unSubscribe = null;
+          }
+          this.channels = null;
+          this.userGroups = null;
+          this.currentChannel = null;
+          this.connected = false;
+          this.channelMessages = null;
+          this.unSubscribe = new Subject();
+          this.authInfo = this.authService.authInfo;
+          const serverId = parseInt(paramMap.get('id'), 10);
+          this.svrService.getServer(serverId)
+            .pipe(
+              takeUntil(this.unSubscribe)
+            )
+            .subscribe(value => {
+              this.serverInfo = value;
+            });
+          this.svrService.getChannels(serverId)
+            .pipe(
+              takeUntil(this.unSubscribe)
+            )
+            .subscribe(value => {
+              this.channels = value;
+              if (!this.currentChannel) {
+                this.connectTo(this.channels[0]);
+              }
+            });
+          this.svrService.getUserGroups(serverId)
+            .pipe(
+              takeUntil(this.unSubscribe)
+            )
+            .subscribe(value => {
+              this.userGroups = value;
+            });
+          const fromMe = {
+            type: MESSAGE_FROM_USER,
+            userId: this.authInfo.userId,
+            username: this.authInfo.username
+          } as MessageFromUser;
+
+          const toMe = {
+            type: MESSAGE_TO_USER,
+            userId: this.authInfo.userId,
+            username: this.authInfo.username
+          } as MessageToUser;
+
+          this.connService.getGlobalSocketSubject().send({
+            messageFrom: fromMe,
+            messageTo: toMe,
+            time: new Date().getTime(),
+            messageType: MESSAGE_TYPE_GET_SERVER_CHANNELS,
+            message: strToUtf8Bytes(serverId + '')
+          } as BiaMessage);
+
+          this.connService.getGlobalSocketSubject().send({
+            messageFrom: fromMe,
+            messageTo: toMe,
+            time: new Date().getTime(),
+            messageType: MESSAGE_TYPE_GET_SERVER_USER_GROUP,
+            message: strToUtf8Bytes(serverId + '')
+          } as BiaMessage);
+        });
       }
-      this.channels = null;
-      this.userGroups = null;
-      this.currentChannel = null;
-      this.connected = false;
-      this.channelMessages = null;
-      this.unSubscribe = new Subject();
-      this.authInfo = this.authService.authInfo;
-      const serverId = parseInt(paramMap.get('id'), 10);
-      this.svrService.getServer(serverId)
-        .pipe(
-          takeUntil(this.unSubscribe)
-        )
-        .subscribe(value => {
-          this.serverInfo = value;
-        });
-      this.svrService.getChannels(serverId)
-        .pipe(
-          takeUntil(this.unSubscribe)
-        )
-        .subscribe(value => {
-          this.channels = value;
-          if (!this.currentChannel) {
-            this.connectTo(this.channels[0]);
-          }
-        });
-      this.svrService.getUserGroups(serverId)
-        .pipe(
-          takeUntil(this.unSubscribe)
-        )
-        .subscribe(value => {
-          this.userGroups = value;
-        });
-      this.connService.isReady()
-        .pipe(
-          takeUntil(this.unSubscribe)
-        )
-        .subscribe(ready => {
-          if (ready) {
-            this.globalSocketSubject = this.connService.getGlobalSocketSubject();
-            const fromMe = {
-              type: MESSAGE_FROM_USER,
-              userId: this.authInfo.userId,
-              username: this.authInfo.username
-            } as MessageFromUser;
-
-            const toMe = {
-              type: MESSAGE_TO_USER,
-              userId: this.authInfo.userId,
-              username: this.authInfo.username
-            } as MessageToUser;
-
-            this.globalSocketSubject.send({
-              messageFrom: fromMe,
-              messageTo: toMe,
-              time: new Date().getTime(),
-              messageType: MESSAGE_TYPE_GET_SERVER_CHANNELS,
-              message: strToUtf8Bytes(serverId + '')
-            } as BiaMessage);
-
-            this.globalSocketSubject.send({
-              messageFrom: fromMe,
-              messageTo: toMe,
-              time: new Date().getTime(),
-              messageType: MESSAGE_TYPE_GET_SERVER_USER_GROUP,
-              message: strToUtf8Bytes(serverId + '')
-            } as BiaMessage);
-          }
-        });
     });
     document.addEventListener('click', this.onClickOutside.bind(this));
   }
@@ -213,7 +207,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     if (!message) {
       return;
     }
-    this.globalSocketSubject.send({
+    this.connService.getGlobalSocketSubject().send({
       messageFrom: {
         type: MESSAGE_FROM_USER,
         userId: this.authInfo.userId,
@@ -377,7 +371,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     if (currentIn) {
       this.leftChannel(currentIn);
     }
-    this.globalSocketSubject.send({
+    this.connService.getGlobalSocketSubject().send({
       messageFrom: {
         type: MESSAGE_FROM_USER,
         userId: this.authInfo.userId,
@@ -395,7 +389,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   leftChannel(id: number) {
-    this.globalSocketSubject.send({
+    this.connService.getGlobalSocketSubject().send({
       messageFrom: {
         type: MESSAGE_FROM_USER,
         userId: this.authInfo.userId,

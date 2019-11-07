@@ -42,11 +42,13 @@ export class RequestForScreenShare {
 
 export class ResponseForScreenShare {
   userId: number;
+  username: string;
   at: Date;
 
-  static accept(userId: number): ResponseForScreenShare {
+  static accept(userId: number, username: string): ResponseForScreenShare {
     const data = new ResponseForScreenShare();
     data.userId = userId;
+    data.username = username;
     data.at = new Date();
     return data;
   }
@@ -57,7 +59,6 @@ export class ResponseForScreenShare {
 })
 export class WsConnectionService {
   private globalSocketSubject: BiaMessageWebsocketSubject<BiaMessage>;
-  private ready = new EventEmitter<boolean>();
 
   private channelMessages: Map<number, BiaMessage[]> = new Map<number, BiaMessage[]>();
   private channelMessagesChange = new EventEmitter<Map<number, BiaMessage[]>>();
@@ -67,6 +68,8 @@ export class WsConnectionService {
 
   private inChannelPlayers: Map<number, ServerUser[]> = new Map<number, ServerUser[]>();
   private inChannelPlayersChange = new EventEmitter<Map<number, ServerUser[]>>();
+
+  private ready = new EventEmitter<boolean>();
 
   requestForScreenShare: RequestForScreenShare;
   responseForScreenShare: ResponseForScreenShare;
@@ -85,8 +88,8 @@ export class WsConnectionService {
       json.message = str2ByteArray(message);
       return json;
     });
-    this.globalSocketSubject.ready.subscribe(ready => {
-      this.ready.emit(ready);
+    this.globalSocketSubject.onReady().subscribe(value => {
+      this.ready.next(value);
     });
     return this.globalSocketSubject;
   }
@@ -95,9 +98,16 @@ export class WsConnectionService {
     return this.globalSocketSubject;
   }
 
-  isReady(): Observable<boolean> {
-    if (this.globalSocketSubject && this.globalSocketSubject.isReady) {
-      return of(this.globalSocketSubject.isReady);
+  closeAll() {
+    if (this.globalSocketSubject) {
+      this.globalSocketSubject.complete();
+      this.globalSocketSubject = null;
+    }
+  }
+
+  onReady(): Observable<boolean> {
+    if (this.globalSocketSubject) {
+      return this.globalSocketSubject.onReady();
     }
     return this.ready;
   }
@@ -279,9 +289,9 @@ export class WsConnectionService {
     this.requestForScreenShare = RequestForScreenShare.require(userId, username);
   }
 
-  acceptResponseForScreenShare(userId: number, accept: boolean) {
+  acceptResponseForScreenShare(userId: number, username: string, accept: boolean) {
     if (accept) {
-      this.responseForScreenShare = ResponseForScreenShare.accept(userId);
+      this.responseForScreenShare = ResponseForScreenShare.accept(userId, username);
     } else {
       this.responseForScreenShare = null;
     }
