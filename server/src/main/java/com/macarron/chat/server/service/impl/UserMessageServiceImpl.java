@@ -115,7 +115,7 @@ public class UserMessageServiceImpl implements UserMessageService {
                 this.resolveChatTextMessage(session, messageData);
                 break;
             }
-            case MessageConstants.MessageTypes.TYPE_ON_VOICE_RTC_CONN: {
+            case MessageConstants.MessageTypes.TYPE_ON_PASS_RTC_CONN: {
                 this.resolveVoiceRTCConnectionRequirement(session, messageData);
                 break;
             }

@@ -134,7 +134,7 @@ export class BiaMessageWebsocketSubject<T> extends Subject<T> {
   private wsSubjectConfig: WebSocketSubjectConfig<T>;
   private reconnectionObservable: Observable<number>;
   private connectionObserver: Observer<boolean>;
-  public connectionStatus: Observable<boolean>;
+  private connectionStatus: Observable<boolean>;
   private socket: WebSocketSubject<T>;
 
   private reconnectInterval = 5000;

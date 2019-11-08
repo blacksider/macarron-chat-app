@@ -1,14 +1,7 @@
 import {ElementRef, Injectable} from '@angular/core';
 import {WsConnectionService} from './ws-connection.service';
 import {AuthService} from '../auth/auth.service';
-import {
-  BiaMessage,
-  MESSAGE_FROM_USER,
-  MESSAGE_TO_USER,
-  MESSAGE_TYPE_ON_VOICE_RTC_CONN,
-  MessageFromUser,
-  MessageToUser
-} from './bia-message';
+import {BiaMessage, MESSAGE_FROM_USER, MESSAGE_TO_USER, MESSAGE_TYPE_ON_PASS_RTC_CONN, MessageFromUser, MessageToUser} from './bia-message';
 import {byteArray2Str, strToUtf8Bytes} from './bia-message-websocket-subject';
 import {ElectronService} from 'ngx-electron';
 
@@ -87,7 +80,7 @@ export class RtcConnectionService {
         userId: userId,
         username: username,
       } as MessageToUser,
-      messageType: MESSAGE_TYPE_ON_VOICE_RTC_CONN,
+      messageType: MESSAGE_TYPE_ON_PASS_RTC_CONN,
       message: strToUtf8Bytes(JSON.stringify(message))
     } as BiaMessage;
     this.wsConnService.getGlobalSocketSubject().send(messageData);
@@ -139,8 +132,11 @@ export class RtcConnectionService {
 
   private setLocalStreamCallback(stream) {
     this.screenShareLocationStream = stream;
+    this.screenShare.nativeElement.style.display = 'flex';
     this.screenShare.nativeElement.style.width = 800 + 'px';
-    this.screenShare.nativeElement.style.height = 450 + 'px';
+    this.screenShare.nativeElement.style.height = 473 + 'px';
+    this.screenShare.nativeElement.style.right = 0 + 'px';
+    this.screenShare.nativeElement.style.bottom = 0 + 'px';
     const localStream = document.getElementById('local-stream') as HTMLVideoElement;
     localStream.style.display = 'block';
     const remoteStream = document.getElementById('remote-stream') as HTMLVideoElement;
@@ -160,8 +156,9 @@ export class RtcConnectionService {
     remoteStream.style.display = 'block';
     remoteStream.srcObject = e.streams[0];
     remoteStream.play();
+    this.screenShare.nativeElement.style.display = 'flex';
     this.screenShare.nativeElement.style.width = 800 + 'px';
-    this.screenShare.nativeElement.style.height = 450 + 'px';
+    this.screenShare.nativeElement.style.height = 473 + 'px';
     this.screenShare.nativeElement.style.right = 0 + 'px';
     this.screenShare.nativeElement.style.bottom = 0 + 'px';
   }
@@ -169,6 +166,7 @@ export class RtcConnectionService {
   closeConnection() {
     this.screenShare.nativeElement.style.width = 0 + 'px';
     this.screenShare.nativeElement.style.height = 0 + 'px';
+    this.screenShare.nativeElement.style.display = 'none';
     const localStream = document.getElementById('local-stream') as HTMLVideoElement;
     const remoteStream = document.getElementById('remote-stream') as HTMLVideoElement;
     if (this.screenSharePc) {

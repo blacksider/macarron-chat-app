@@ -10,6 +10,7 @@ import {AddServerComponent} from './add-server/add-server.component';
 import {PopoverModule} from 'ngx-bootstrap';
 import {UserMessagesComponent} from './user-messages/user-messages.component';
 import {RtcConnectionService} from './rtc-connection.service';
+import {DragDropModule} from '@angular/cdk/drag-drop';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import {RtcConnectionService} from './rtc-connection.service';
     FormsModule,
     MainRoutingModule,
     SharedModule,
-    PopoverModule.forRoot()
+    PopoverModule.forRoot(),
+    DragDropModule
   ],
   entryComponents: [
     AddServerComponent

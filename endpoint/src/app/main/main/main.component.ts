@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {AuthService} from '../../auth/auth.service';
 import {AuthInfo} from '../../auth/auth-info';
 import {byteArray2Str} from '../bia-message-websocket-subject';
@@ -9,9 +9,9 @@ import {
   MESSAGE_TO_SERVER_CHANNEL,
   MESSAGE_TO_USER,
   MESSAGE_TYPE_GET_SERVERS,
+  MESSAGE_TYPE_ON_PASS_RTC_CONN,
   MESSAGE_TYPE_ON_SCREEN_SHARE_REQUEST,
   MESSAGE_TYPE_ON_SCREEN_SHARE_RESPONSE,
-  MESSAGE_TYPE_ON_VOICE_RTC_CONN,
   MESSAGE_TYPE_PLAYER_JOIN_CHANNEL,
   MESSAGE_TYPE_PLAYER_LEFT_CHANNEL,
   MESSAGE_TYPE_REPLY_SERVER_CHANNELS,
@@ -37,6 +37,21 @@ import {HttpClient} from '@angular/common/http';
 import {environment} from '../../../environments/environment';
 import {RtcConnectionService} from '../rtc-connection.service';
 
+enum ResizeDirection {
+  top = 1,
+  left = 2,
+  bottom = 3,
+  right = 4,
+  top_left = 5,
+  top_right = 6,
+  bottom_left = 7,
+  bottom_right = 8
+}
+
+class ResizeStats {
+  direction: ResizeDirection;
+}
+
 @Component({
   selector: 'app-main',
   templateUrl: './main.component.html',
@@ -51,6 +66,15 @@ export class MainComponent implements OnInit, OnDestroy {
   private keepAliveIntervalObv: Observable<number>;
   private keepAliveInterval = 10000;
   ready = false;
+  maxScreenShare = false;
+  minScreenShare = false;
+  private beforeMaxScreenShareSize: { width: string, height: string, right: string, bottom: string };
+  private beforeMinScreenShareSize: { width: string, height: string, right: string, bottom: string };
+
+  resizeDirections = ResizeDirection;
+  private resizeState: ResizeStats;
+  private dragging = false;
+  private draggingMouseLastPos: { x: number, y: number };
 
   constructor(private wsConnService: WsConnectionService,
               private modalService: BsModalService,
@@ -156,7 +180,7 @@ export class MainComponent implements OnInit, OnDestroy {
         this.parseScreenShareMessage(value);
         break;
       }
-      case MESSAGE_TYPE_ON_VOICE_RTC_CONN: {
+      case MESSAGE_TYPE_ON_PASS_RTC_CONN: {
         this.rtcConnectionService.parseScreenShareRTCMessage(value);
         break;
       }
@@ -248,5 +272,199 @@ export class MainComponent implements OnInit, OnDestroy {
         break;
       }
     }
+  }
+
+  maximizeScreenShare() {
+    if (!this.maxScreenShare) {
+      this.beforeMaxScreenShareSize = this.storeCurrentScreenShareStats();
+      const screenShareEle = this.screenShare.nativeElement;
+      screenShareEle.style.height = window.innerHeight + 'px';
+      screenShareEle.style.width = window.innerWidth + 'px';
+      screenShareEle.style.right = '0px';
+      screenShareEle.style.bottom = '0px';
+      screenShareEle.style.transform = null;
+      this.maxScreenShare = true;
+    } else {
+      this.restoreScreenShareStats(this.beforeMaxScreenShareSize);
+      this.beforeMaxScreenShareSize = null;
+      this.maxScreenShare = false;
+    }
+  }
+
+  private storeCurrentScreenShareStats() {
+    const screenShareEle = this.screenShare.nativeElement;
+    return {
+      width: screenShareEle.style.width,
+      height: screenShareEle.style.height,
+      right: screenShareEle.style.right,
+      bottom: screenShareEle.style.bottom
+    };
+  }
+
+  private restoreScreenShareStats(restoreFrom) {
+    const screenShareEle = this.screenShare.nativeElement;
+    screenShareEle.style.height = restoreFrom.height;
+    screenShareEle.style.width = restoreFrom.width;
+    screenShareEle.style.right = restoreFrom.right;
+    screenShareEle.style.bottom = restoreFrom.bottom;
+  }
+
+  minimizeScreenShare() {
+    if (!this.minScreenShare) {
+      this.beforeMinScreenShareSize = this.storeCurrentScreenShareStats();
+      const screenShareEle = this.screenShare.nativeElement;
+      screenShareEle.style.height = 23 + 'px';
+      screenShareEle.style.width = 70 + 'px';
+      screenShareEle.style.transform = null;
+      this.minScreenShare = true;
+    } else {
+      this.restoreScreenShareStats(this.beforeMinScreenShareSize);
+      this.beforeMinScreenShareSize = null;
+      this.minScreenShare = false;
+    }
+  }
+
+  closeScreenShare() {
+    this.maxScreenShare = false;
+    this.rtcConnectionService.closeConnection();
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onResize(event) {
+    if (this.maxScreenShare) {
+      const screenShareEle = this.screenShare.nativeElement;
+      screenShareEle.style.height = window.innerHeight + 'px';
+      screenShareEle.style.width = window.innerWidth + 'px';
+    }
+  }
+
+  startResizing($event: MouseEvent, direction: ResizeDirection) {
+    if (this.minScreenShare || this.maxScreenShare) {
+      return;
+    }
+    this.resizeState = {direction};
+    this.draggingMouseLastPos = {
+      x: $event.clientX,
+      y: $event.clientY
+    };
+  }
+
+  @HostListener('mouseleave', ['$event'])
+  onMouseleave($event: MouseEvent) {
+    this.resizeState = null;
+    this.dragging = false;
+  }
+
+  @HostListener('mouseup', ['$event'])
+  onMouseup($event: MouseEvent) {
+    this.resizeState = null;
+    this.dragging = false;
+  }
+
+  @HostListener('mousemove', ['$event'])
+  onMousemove($event: MouseEvent) {
+    if (this.resizeState) {
+      const screenShareEle = this.screenShare.nativeElement;
+      const height = screenShareEle.offsetHeight;
+      const movedY = $event.clientY - this.draggingMouseLastPos.y;
+      const movedX = $event.clientX - this.draggingMouseLastPos.x;
+      const width = screenShareEle.offsetWidth;
+
+      switch (this.resizeState.direction) {
+        case ResizeDirection.bottom: {
+          screenShareEle.style.height = height + movedY + 'px';
+          const originalBottom = this.parsePxValue(screenShareEle.style.bottom);
+          screenShareEle.style.bottom = originalBottom - movedY + 'px';
+          break;
+        }
+        case ResizeDirection.top: {
+          screenShareEle.style.height = height - movedY + 'px';
+          break;
+        }
+        case ResizeDirection.left: {
+          screenShareEle.style.width = width - movedX + 'px';
+          break;
+        }
+        case ResizeDirection.right: {
+          screenShareEle.style.width = width + movedX + 'px';
+          const originalRight = this.parsePxValue(screenShareEle.style.right);
+          screenShareEle.style.right = originalRight - movedX + 'px';
+          break;
+        }
+        case ResizeDirection.top_left: {
+          screenShareEle.style.height = height - movedY + 'px';
+          screenShareEle.style.width = width - movedX + 'px';
+          break;
+        }
+        case ResizeDirection.top_right: {
+          screenShareEle.style.height = height - movedY + 'px';
+          screenShareEle.style.width = width + movedX + 'px';
+          const originalRight = this.parsePxValue(screenShareEle.style.right);
+          screenShareEle.style.right = originalRight - movedX + 'px';
+          break;
+        }
+        case ResizeDirection.bottom_left: {
+          screenShareEle.style.width = width - movedX + 'px';
+          screenShareEle.style.height = height + movedY + 'px';
+          const originalBottom = this.parsePxValue(screenShareEle.style.bottom);
+          screenShareEle.style.bottom = originalBottom - movedY + 'px';
+          break;
+        }
+        case ResizeDirection.bottom_right: {
+          const originalBottom = this.parsePxValue(screenShareEle.style.bottom);
+          const originalRight = this.parsePxValue(screenShareEle.style.right);
+          screenShareEle.style.bottom = originalBottom - movedY + 'px';
+          screenShareEle.style.right = originalRight - movedX + 'px';
+          screenShareEle.style.height = height + movedY + 'px';
+          screenShareEle.style.width = width + movedX + 'px';
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+      this.draggingMouseLastPos = {
+        x: $event.clientX,
+        y: $event.clientY
+      };
+    } else if (this.dragging) {
+      const screenShareEle = this.screenShare.nativeElement;
+      const movedX = $event.clientX - this.draggingMouseLastPos.x;
+      const movedY = $event.clientY - this.draggingMouseLastPos.y;
+      const originalRight = this.parsePxValue(screenShareEle.style.right);
+      const originalBottom = this.parsePxValue(screenShareEle.style.bottom);
+      screenShareEle.style.right = originalRight - movedX + 'px';
+      screenShareEle.style.bottom = originalBottom - movedY + 'px';
+      this.draggingMouseLastPos = {
+        x: $event.clientX,
+        y: $event.clientY
+      };
+    }
+  }
+
+  private parsePxValue(px: string): number {
+    if (!px) {
+      return 0;
+    }
+    const values = px.split('px');
+    if (!values || values.length < 2) {
+      return 0;
+    }
+    try {
+      return parseInt(values[0], 10);
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  startDragging($event: MouseEvent) {
+    if (this.minScreenShare || this.maxScreenShare) {
+      return;
+    }
+    this.dragging = true;
+    this.draggingMouseLastPos = {
+      x: $event.clientX,
+      y: $event.clientY
+    };
   }
 }

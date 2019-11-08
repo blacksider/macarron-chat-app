@@ -44,8 +44,31 @@
   </div>
 </div>
 <div class="screen-share" #screenShare>
-  <div class="options">
+  <div class="resize-handle-top" (mousedown)="startResizing($event, resizeDirections.top)"></div>
+  <div class="resize-handle-left" (mousedown)="startResizing($event, resizeDirections.left)"></div>
+  <div class="resize-handle-right" (mousedown)="startResizing($event, resizeDirections.right)"></div>
+  <div class="resize-handle-bottom" (mousedown)="startResizing($event, resizeDirections.bottom)"></div>
+  <div class="resize-handle-top-left" (mousedown)="startResizing($event, resizeDirections.top_left)"></div>
+  <div class="resize-handle-top-right" (mousedown)="startResizing($event, resizeDirections.top_right)"></div>
+  <div class="resize-handle-bottom-left" (mousedown)="startResizing($event, resizeDirections.bottom_left)"></div>
+  <div class="resize-handle-bottom-right" (mousedown)="startResizing($event, resizeDirections.bottom_right)"></div>
+  <div class="options" (mousedown)="startDragging($event)">
+    <span class="title" [ngClass]="{'hide': minScreenShare}">分享桌面</span>
+    <div class="margins-minimize" (click)="minimizeScreenShare()"
+         (mousedown)="$event.stopPropagation()" [ngClass]="{'be-second': minScreenShare}">
+      <i class="fa" [ngClass]="{'fa-window-minimize': !minScreenShare, 'fa-window-restore': minScreenShare}"></i>
+    </div>
+    <div class="margins-maximize" (click)="maximizeScreenShare()" [ngClass]="{'hide': minScreenShare}"
+         (mousedown)="$event.stopPropagation()">
+      <i class="fa" [ngClass]="{'fa-window-maximize': !maxScreenShare, 'fa-window-restore': maxScreenShare}"></i>
+    </div>
+    <div class="margins-remove" (click)="closeScreenShare()"
+         (mousedown)="$event.stopPropagation()">
+      <i class="fa fa-remove"></i>
+    </div>
   </div>
-  <video id="local-stream"></video>
-  <video id="remote-stream"></video>
+  <div class="video-content">
+    <video id="local-stream" [ngClass]="{'hide': minScreenShare}"></video>
+    <video id="remote-stream" [ngClass]="{'hide': minScreenShare}"></video>
+  </div>
 </div>
