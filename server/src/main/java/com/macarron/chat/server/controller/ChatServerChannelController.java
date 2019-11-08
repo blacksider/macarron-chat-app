@@ -25,7 +25,7 @@ public class ChatServerChannelController {
     }
 
     @DeleteMapping("/api/server/channel")
-    void createServer(@RequestParam long id) {
+    void deleteChannel(@RequestParam long id) {
         channelService.deleteChannel(id);
     }
 }

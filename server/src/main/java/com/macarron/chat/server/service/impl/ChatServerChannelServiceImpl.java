@@ -180,6 +180,7 @@ public class ChatServerChannelServiceImpl implements ChatServerChannelService {
             return Pair.of(server, serverUserList);
         });
         if (res != null) {
+            // TODO close all connections to this channel
             notifyChannelChanges(currentUser, res.getFirst(), res.getSecond());
         }
     }

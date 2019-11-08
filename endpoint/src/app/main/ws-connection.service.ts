@@ -79,15 +79,18 @@ export class WsConnectionService {
 
   connectGlobalSubject(token: string): BiaMessageWebsocketSubject<BiaMessage> {
     const url = `${environment.wsAddr}/ws/connect`;
-    this.globalSocketSubject = new BiaMessageWebsocketSubject<BiaMessage>(url, token, this.authService, null, e => {
-      // default received data is encoded by utf8, need to decode to unicode str
-      const arr = new Int8Array(e.data);
-      const json = JSON.parse(utf8ByteToUnicodeStr(arr));
-      const int8Arr = convertBase64ToBinary(json.message);
-      const message = utf8ByteToUnicodeStr(int8Arr);
-      json.message = str2ByteArray(message);
-      return json;
-    });
+    this.globalSocketSubject = new BiaMessageWebsocketSubject<BiaMessage>(
+      url, token, this.authService,
+      null,
+      e => {
+        // default received data is encoded by utf8, need to decode to unicode str
+        const arr = new Int8Array(e.data);
+        const json = JSON.parse(utf8ByteToUnicodeStr(arr));
+        const int8Arr = convertBase64ToBinary(json.message);
+        const message = utf8ByteToUnicodeStr(int8Arr);
+        json.message = str2ByteArray(message);
+        return json;
+      });
     this.globalSocketSubject.onReady().subscribe(value => {
       this.ready.next(value);
     });

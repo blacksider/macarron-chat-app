@@ -1,11 +1,9 @@
 package com.macarron.chat.server.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.session.Session;
-import org.springframework.session.SessionRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketHandler;
@@ -13,32 +11,31 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.Map;
 
+@Slf4j
 @Component
-public class AuthTokenHandShakeInterceptor implements HandshakeInterceptor {
-    private static final String HEADER_X_AUTH_TOKEN = "X-Auth-Token";
-    public static final String KEY_SOCKET_SESSION = "KEY_SOCKET_SESSION";
-    private SessionRepository sessionRepository;
-
-    @Autowired
-    public void setSessionRepository(SessionRepository sessionRepository) {
-        this.sessionRepository = sessionRepository;
-    }
+public class ChannelIdInterceptor implements HandshakeInterceptor {
+    private static final String PARAM_CHANNEL_ID = "channelId";
+    public static final String KEY_CHANNEL_ID = "KEY_CHANNEL_ID";
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request,
                                    ServerHttpResponse response,
                                    WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) {
-        String token = ((ServletServerHttpRequest) request).getServletRequest()
-                .getParameter(HEADER_X_AUTH_TOKEN.toLowerCase());
-        if (StringUtils.isEmpty(token)) {
+        String channelIdStr = ((ServletServerHttpRequest) request).getServletRequest()
+                .getParameter(PARAM_CHANNEL_ID);
+        if (StringUtils.isEmpty(channelIdStr)) {
+            log.warn("Given channel id param is empty");
             return false;
         }
-        Session session = sessionRepository.findById(token);
-        if (session == null) {
+        long channelId;
+        try {
+            channelId = Long.valueOf(channelIdStr);
+        } catch (NumberFormatException e) {
+            log.warn("Given channel id param {} is not valid", channelIdStr);
             return false;
         }
-        attributes.put(KEY_SOCKET_SESSION, session);
+        attributes.put(KEY_CHANNEL_ID, channelId);
         return true;
     }
 

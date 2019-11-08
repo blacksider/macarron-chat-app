@@ -36,4 +36,10 @@ public class MessageConstants {
         public static final int TYPE_PLAYER_JOIN_CHANNEL = 5100;
         public static final int TYPE_PLAYER_LEFT_CHANNEL = 5101;
     }
+
+    public static class VoiceMessageTypes {
+        public static final int TYPE_GET_CHANNEL_PLAYERS = 100;
+        public static final int TYPE_REPLY_CHANNEL_PLAYERS_CHANGE = 101;
+        public static final int TYPE_VOICE_MESSAGE = 120;
+    }
 }

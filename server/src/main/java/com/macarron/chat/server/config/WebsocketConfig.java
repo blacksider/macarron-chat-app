@@ -1,6 +1,7 @@
 package com.macarron.chat.server.config;
 
 import com.macarron.chat.server.controller.UserMessageHandler;
+import com.macarron.chat.server.controller.VoiceChannelHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,8 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 public class WebsocketConfig implements WebSocketConfigurer {
     private UserMessageHandler userMessageHandler;
     private AuthTokenHandShakeInterceptor authTokenHandShakeInterceptor;
+    private VoiceChannelHandler voiceChannelHandler;
+    private ChannelIdInterceptor channelIdInterceptor;
 
     @Autowired
     public void setUserMessageHandler(UserMessageHandler userMessageHandler) {
@@ -25,6 +28,16 @@ public class WebsocketConfig implements WebSocketConfigurer {
     @Autowired
     public void setAuthTokenHandShakeInterceptor(AuthTokenHandShakeInterceptor authTokenHandShakeInterceptor) {
         this.authTokenHandShakeInterceptor = authTokenHandShakeInterceptor;
+    }
+
+    @Autowired
+    public void setVoiceChannelHandler(VoiceChannelHandler voiceChannelHandler) {
+        this.voiceChannelHandler = voiceChannelHandler;
+    }
+
+    @Autowired
+    public void setChannelIdInterceptor(ChannelIdInterceptor channelIdInterceptor) {
+        this.channelIdInterceptor = channelIdInterceptor;
     }
 
     @Bean
@@ -39,6 +52,9 @@ public class WebsocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(userMessageHandler, "/ws/connect")
                 .addInterceptors(authTokenHandShakeInterceptor)
+                .setAllowedOrigins("*");
+        registry.addHandler(voiceChannelHandler, "/ws/channel")
+                .addInterceptors(authTokenHandShakeInterceptor, channelIdInterceptor)
                 .setAllowedOrigins("*");
     }
 

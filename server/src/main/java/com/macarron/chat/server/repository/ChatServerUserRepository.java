@@ -28,5 +28,7 @@ public interface ChatServerUserRepository extends JpaRepository<ChatServerUser, 
     @Query("select count(svu) from ChatServerUser svu where svu.user.email=?1 and svu.userGroup.server.id=?2")
     long countByUserEmailAndUserGroupServerId(final String userEmail, long serverId);
 
+    List<ChatServerUser> findByUser_EmailIn(final List<String> emails);
+
     void deleteByUserGroup_Server(final ChatServer server);
 }
