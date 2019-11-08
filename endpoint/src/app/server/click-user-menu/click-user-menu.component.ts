@@ -50,7 +50,7 @@ export class ClickUserMenuComponent implements OnInit, OnDestroy {
     this.router.navigate([`/app/main/user-message/${this.user.user.id}`]);
   }
 
-  shareScreenTo(userId: number) {
+  shareScreenTo() {
     const tempMessageFrom = new MessageFromUser();
     tempMessageFrom.userId = this.user.user.id;
     tempMessageFrom.username = this.user.user.username;

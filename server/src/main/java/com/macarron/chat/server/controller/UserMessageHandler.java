@@ -78,7 +78,11 @@ public class UserMessageHandler extends BinaryWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        this.playerToChannelService.handlePlayerCloseConnection(session);
+        try {
+            this.playerToChannelService.handlePlayerCloseConnection(session);
+        } catch (Exception e) {
+            log.error("handle close connection error", e);
+        }
         this.userSessionService.removeSession(session);
     }
 }

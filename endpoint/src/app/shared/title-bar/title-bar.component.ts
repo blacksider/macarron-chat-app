@@ -7,6 +7,7 @@ import {ElectronService} from 'ngx-electron';
   styleUrls: ['./title-bar.component.less']
 })
 export class TitleBarComponent implements OnInit {
+  title = 'VoiceChat (v0.0.1)';
   max = false;
 
   constructor(private electron: ElectronService) {
@@ -14,7 +15,6 @@ export class TitleBarComponent implements OnInit {
 
   ngOnInit() {
   }
-
 
   closeWindow() {
     this.electron.remote.BrowserWindow.getFocusedWindow().close();

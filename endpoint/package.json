@@ -14,7 +14,8 @@
     "electron:serve-tsc": "tsc -p tsconfig-serve.json",
     "electron:serve": "wait-on http-get://localhost:4200/ && npm run electron:serve-tsc && electron . --serve",
     "electron:windows": "electron-packager . endpoint --ignore=/node_modules --ignore=/e2e --ignore=/.idea --ignore=/*.ts --ignore=/*.md --ignore=/postinstall*.* --ignore=/browserslist --ignore=/.editorconfig --ignore=/src --platform=win32 --arch=x64 --icon=./dist/endpoint/favicon.ico --no-prune --overwrite",
-    "electron:build-windows": "electron-builder build --windows"
+    "electron:build-windows": "electron-builder build --windows",
+    "build-windows": "npm run build && npm run electron:build-windows"
   },
   "private": true,
   "dependencies": {

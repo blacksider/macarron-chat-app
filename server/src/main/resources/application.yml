@@ -71,3 +71,6 @@ spring:
 logging:
   level:
     com.macarron.chat.server: debug
+    org:
+      springframework:
+        security: info

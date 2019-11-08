@@ -9,26 +9,50 @@
   z-index: 100;
   background-color: @left-bg-color;
   -webkit-user-select: none;
-  -webkit-app-region: drag;
+  display: flex;
+
+  .plain-holder-left {
+    display: inline-block;
+    width: 10px;
+  }
+
+  .plain-holder-top {
+    position: absolute;
+    height: 5px;
+    width: 100%;
+  }
+
+  .title {
+    font-style: italic;
+    font-weight: bolder;
+    font-size: 18px;
+  }
+
+  .electron-draggable {
+    flex: 1;
+    height: 25px;
+    margin-top: 5px;
+    -webkit-app-region: drag;
+  }
 
   .icon-minimize {
     display: inline-block;
-    position: absolute;
-    right: 130px;
     cursor: pointer;
+    width: 30px;
+    margin-top: 3px;
   }
 
   .icon-maximize {
     display: inline-block;
-    position: absolute;
-    right: 100px;
     cursor: pointer;
+    width: 30px;
+    margin-top: 3px;
   }
 
   .icon-remove {
     display: inline-block;
-    position: absolute;
-    right: 70px;
     cursor: pointer;
+    width: 30px;
+    margin-top: 3px;
   }
 }

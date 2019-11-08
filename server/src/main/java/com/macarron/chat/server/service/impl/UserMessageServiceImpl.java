@@ -245,8 +245,12 @@ public class UserMessageServiceImpl implements UserMessageService {
 
     @Override
     public void sendMessage(WebSocketSession session, BiaMessage messageData) {
+        if (session == null) {
+            log.warn("Connection session is null, will not send anything");
+            return;
+        }
         if (!session.isOpen()) {
-            log.warn("Connection {} already closed, will not send anything", session.getId());
+            log.warn("Connection of id {} already closed, will not send anything", session.getId());
             return;
         }
         // update session timeout
