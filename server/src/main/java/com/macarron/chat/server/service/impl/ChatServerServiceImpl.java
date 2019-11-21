@@ -33,13 +33,21 @@ import com.macarron.chat.server.service.UserSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.util.Pair;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.socket.WebSocketSession;
+import reactor.core.Disposable;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Schedulers;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -73,6 +81,38 @@ public class ChatServerServiceImpl implements ChatServerService {
     private TransactionTemplate transactionTemplate;
     private RedisTemplate<String, Object> redisTemplate;
     private ChatServerUserService serverUserService;
+    private ThreadPoolTaskExecutor eventMessagingExecutor;
+
+    private UnicastProcessor<Pair<ServerUser, List<ServerUser>>>
+            notifyServerChangesProcessor = UnicastProcessor.create();
+    private FluxSink<Pair<ServerUser, List<ServerUser>>> notifyServerChangesSink =
+            notifyServerChangesProcessor.sink(FluxSink.OverflowStrategy.LATEST);
+    private Disposable notifyServerChangesDisposable;
+
+    @PostConstruct
+    public void init() {
+        notifyServerChangesDisposable = notifyServerChangesProcessor
+                .subscribeOn(Schedulers.fromExecutor(eventMessagingExecutor))
+                .subscribe(objects -> {
+//                    try {
+                        this.notifyServerChanges(objects.getFirst(), objects.getSecond());
+                    /*} catch (Exception e) {
+                        log.error("Failed to notify server changes", e);
+                    }*/
+                });
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (notifyServerChangesDisposable != null) {
+            notifyServerChangesDisposable.dispose();
+        }
+    }
+
+    @Autowired
+    public void setEventMessagingExecutor(ThreadPoolTaskExecutor eventMessagingExecutor) {
+        this.eventMessagingExecutor = eventMessagingExecutor;
+    }
 
     @Autowired
     public void setUserService(UserService userService) {
@@ -215,7 +255,7 @@ public class ChatServerServiceImpl implements ChatServerService {
     }
 
     @Override
-    public void deleteServer(long id) {
+    public synchronized void deleteServer(long id) {
         ServerUser currentUser = userService.getCurrentUser();
         if (currentUser == null) {
             throw new MessageException("error.credentials.invalid");
@@ -236,11 +276,12 @@ public class ChatServerServiceImpl implements ChatServerService {
             serverUserRepository.deleteByUserGroup_Server(server);
             serverUserGroupRepository.deleteByServer(server);
             serverChannelRepository.deleteByServer(server);
+            chatServerRepository.delete(server);
 
             return serverUserList;
         });
         if (serverUsers != null) {
-            notifyServerChanges(currentUser, serverUsers);
+            notifyServerChangesSink.next(Pair.of(currentUser, serverUsers));
         }
     }
 
@@ -301,7 +342,7 @@ public class ChatServerServiceImpl implements ChatServerService {
     public void notifyServerChanges(ChatServer server) {
         ServerUser currentUser = userService.getCurrentUser();
         List<ServerUser> serverUsers = serverUserRepository.getServerUsers(server);
-        notifyServerChanges(currentUser, serverUsers);
+        notifyServerChangesSink.next(Pair.of(currentUser, serverUsers));
     }
 
 

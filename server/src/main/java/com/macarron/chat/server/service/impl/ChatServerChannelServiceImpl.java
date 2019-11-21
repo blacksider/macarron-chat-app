@@ -151,7 +151,7 @@ public class ChatServerChannelServiceImpl implements ChatServerChannelService {
     }
 
     @Override
-    public void deleteChannel(long channelId) {
+    public synchronized void deleteChannel(long channelId) {
         ServerUser currentUser = userService.getCurrentUser();
         if (currentUser == null) {
             throw new MessageException("error.credentials.invalid");
