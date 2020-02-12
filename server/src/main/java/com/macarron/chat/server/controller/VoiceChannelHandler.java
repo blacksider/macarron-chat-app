@@ -63,7 +63,7 @@ public class VoiceChannelHandler extends BinaryWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) {
         long channelId = (long) session.getAttributes().get(ChannelIdInterceptor.KEY_CHANNEL_ID);
         sessionMap.computeIfAbsent(channelId, k -> new CopyOnWriteArrayList<>()).add(session);
-        sendServerUsersInChannel(channelId);
+//        sendServerUsersInChannel(channelId);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class VoiceChannelHandler extends BinaryWebSocketHandler {
         if (this.sessionMap.get(channelId).isEmpty()) {
             this.sessionMap.remove(channelId);
         }
-        sendServerUsersInChannel(channelId);
+//        sendServerUsersInChannel(channelId);
     }
 
     private void sendServerUsersInChannel(long channelId) {
@@ -96,11 +96,17 @@ public class VoiceChannelHandler extends BinaryWebSocketHandler {
         for (WebSocketSession inChannelSession : inChannelSessions) {
             if (inChannelSession != null && inChannelSession.isOpen()) {
                 try {
-                    inChannelSession.sendMessage(serverUsersMessage);
+                    this.sendMessage(inChannelSession, serverUsersMessage);
                 } catch (IOException e) {
                     log.error("Failed to send message", e);
                 }
             }
+        }
+    }
+
+    private void sendMessage(WebSocketSession session, BinaryMessage message) throws IOException {
+        synchronized (session) {
+            session.sendMessage(message);
         }
     }
 
@@ -122,7 +128,7 @@ public class VoiceChannelHandler extends BinaryWebSocketHandler {
                     for (WebSocketSession socketSession : this.sessionMap.get(channelId)) {
                         if (socketSession != null && socketSession != session && socketSession.isOpen()) {
                             try {
-                                socketSession.sendMessage(message);
+                                this.sendMessage(socketSession, message);
                             } catch (IOException e) {
                                 log.error("Failed to send message", e);
                             }

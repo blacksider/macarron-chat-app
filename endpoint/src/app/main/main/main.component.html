@@ -38,6 +38,8 @@
     <img [src]="'data:image/png;base64,' + authInfo.avatar">
     <span class="username">{{authInfo.username}}</span>
     <span class="tag">#{{authInfo.tag}}</span>
+    <a href="javascript:;" class="user-icon space-left" [ngClass]="{'talking': isTalking}"><i class="fa fa-microphone"></i></a>
+    <a href="javascript:;" class="user-icon"><i class="fa fa-headphones"></i></a>
   </div>
   <div class="route-content">
     <router-outlet></router-outlet>

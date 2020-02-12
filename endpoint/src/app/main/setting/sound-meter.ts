@@ -3,13 +3,15 @@ export class SoundMeter {
   instant = 0.0;
   slow = 0.0;
   clip = 0.0;
-  private script;
-  private mic;
+  private script: ScriptProcessorNode;
+  private mic: MediaStreamAudioSourceNode;
 
   constructor(context: AudioContext) {
     this.context = context;
     this.script = context.createScriptProcessor(2048, 1, 1);
-    this.script.onaudioprocess = this.onaudioprocess.bind(this);
+    this.script.addEventListener('audioprocess', ev => {
+      this.onaudioprocess(ev);
+    });
   }
 
   onaudioprocess(event: AudioProcessingEvent) {

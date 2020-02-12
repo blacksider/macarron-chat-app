@@ -9,7 +9,6 @@ import {FormsModule} from '@angular/forms';
 import {SharedModule} from '../shared/shared.module';
 import {InviteUserComponent} from './invite-user/invite-user.component';
 import {ClickUserMenuComponent} from './click-user-menu/click-user-menu.component';
-import {ChannelConnectionService} from './channel-connection.service';
 
 @NgModule({
   declarations: [ServerInfoComponent, AddChannelComponent, AddUserGroupComponent, InviteUserComponent, ClickUserMenuComponent],
@@ -22,7 +21,6 @@ import {ChannelConnectionService} from './channel-connection.service';
     PopoverModule.forRoot()
   ],
   providers: [
-    ChannelConnectionService
   ],
   entryComponents: [
     AddChannelComponent,

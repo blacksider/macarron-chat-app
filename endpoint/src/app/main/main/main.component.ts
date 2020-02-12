@@ -36,6 +36,7 @@ import {takeUntil} from 'rxjs/operators';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../../environments/environment';
 import {RtcConnectionService} from '../rtc-connection.service';
+import {ChannelConnectionService} from '../../server/channel-connection.service';
 
 enum ResizeDirection {
   top = 1,
@@ -76,17 +77,23 @@ export class MainComponent implements OnInit, OnDestroy {
   private dragging = false;
   private draggingMouseLastPos: { x: number, y: number };
 
+  private keyCodeTalk = 'KeyC';
+  isTalking = false;
+
   constructor(private wsConnService: WsConnectionService,
               private modalService: BsModalService,
               private http: HttpClient,
               private serverInfoService: ServerInfoService,
               private electron: ElectronService,
               private rtcConnectionService: RtcConnectionService,
+              private channelConnSvr: ChannelConnectionService,
               private router: Router,
               private authService: AuthService) {
   }
 
   ngOnInit(): void {
+    window.addEventListener('keydown', this.readyToTalk.bind(this), true);
+    window.addEventListener('keyup', this.releaseTalk.bind(this), true);
     this.rtcConnectionService.setScreenShareElement(this.screenShare);
     this.authInfo = this.authService.authInfo;
 
@@ -466,5 +473,25 @@ export class MainComponent implements OnInit, OnDestroy {
       x: $event.clientX,
       y: $event.clientY
     };
+  }
+
+  readyToTalk($event: KeyboardEvent) {
+    const code = $event.code;
+    if (code === this.keyCodeTalk) {
+      if (!this.isTalking) {
+        this.isTalking = true;
+        this.channelConnSvr.startSendAudio();
+      }
+    }
+  }
+
+  releaseTalk($event: KeyboardEvent) {
+    const code = $event.code;
+    if (code === this.keyCodeTalk) {
+      if (this.isTalking) {
+        this.isTalking = false;
+        this.channelConnSvr.stopSendAudio();
+      }
+    }
   }
 }

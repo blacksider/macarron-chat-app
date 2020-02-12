@@ -30,6 +30,7 @@ import {AddUserGroupComponent} from '../add-user-group/add-user-group.component'
 import {ConfirmService} from '../../shared/confirm/confirm.service';
 import {ToastrService} from 'ngx-toastr';
 import {InviteUserComponent} from '../invite-user/invite-user.component';
+import {ChannelConnectionService} from '../channel-connection.service';
 
 const KEYCODE_ENTER = 'Enter';
 const KEYCODE_Shift = 'ShiftLeft';
@@ -68,6 +69,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   constructor(private svrService: ServerInfoService,
               private connService: WsConnectionService,
+              private channelConnSvr: ChannelConnectionService,
               private modalService: BsModalService,
               private route: ActivatedRoute,
               private confirm: ConfirmService,
@@ -386,6 +388,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       messageType: MESSAGE_TYPE_ON_PLAYER_JOIN_CHANNEL,
       message: []
     } as BiaMessage);
+    this.channelConnSvr.connect(room.id);
   }
 
   leftChannel(id: number) {
@@ -404,6 +407,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       messageType: MESSAGE_TYPE_ON_PLAYER_LEFT_CHANNEL,
       message: []
     } as BiaMessage);
+    this.channelConnSvr.closeAll();
   }
 
   handleMouseClickOnUser($event: MouseEvent, user: ChatServerUser) {

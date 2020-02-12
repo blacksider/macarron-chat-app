@@ -24,16 +24,13 @@ spring:
     password: chatserveradmin
     initialization-mode: always
     sql-script-encoding: UTF-8
-    tomcat:
-      test-while-idle: true
-      test-on-borrow: true
-      validation-query: SELECT 1
-      time-between-eviction-runs-millis: 5000
-      min-evictable-idle-time-millis: 10000
-      max-active: 20
-      max-idle: 20
-      min-idle: 5
-      validation-query-timeout: 3
+    hikari:
+      connection-test-query: SELECT 1
+      connection-timeout: 30000
+      max-lifetime: 600000
+      idle-timeout: 300000
+      minimum-idle: 5
+      maximum-pool-size: 20
     driver-class-name: org.postgresql.Driver
     platform: postgresql
 

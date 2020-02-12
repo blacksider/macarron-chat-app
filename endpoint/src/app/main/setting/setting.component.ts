@@ -1,7 +1,7 @@
 import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {SoundMeter} from './sound-meter';
 import {ToastrService} from 'ngx-toastr';
-import {__await} from 'tslib';
+import {SettingService} from '../setting.service';
 
 @Component({
   selector: 'app-setting',
@@ -25,11 +25,13 @@ export class SettingComponent implements OnInit, OnDestroy {
   selectedAudioInput: any;
   selectedAudioOutput: any;
   selectedVideoInput: MediaDeviceInfo = null;
+
   testAudio = false;
   testAudioSoundMeter: SoundMeter;
   testAudioInterval: any;
 
-  constructor(private toastr: ToastrService) {
+  constructor(private toastr: ToastrService,
+              private settingService: SettingService) {
   }
 
   ngOnDestroy(): void {
@@ -45,7 +47,25 @@ export class SettingComponent implements OnInit, OnDestroy {
     this.selectedAudioInput = this.defaultId;
     this.selectedAudioOutput = this.defaultId;
 
+    this.listDevices();
+    navigator.mediaDevices.addEventListener('devicechange', (ev) => {
+      this.listDevices();
+    });
+  }
+
+  private reset() {
+    this.audioInputs = [];
+    this.audioOutputs = [];
+    this.videoInputs = [];
+    this.defaultAudioInput = null;
+    this.defaultAudioOutput = null;
+    this.selectedAudioInput = this.defaultId;
+    this.selectedAudioOutput = this.defaultId;
+  }
+
+  private listDevices() {
     navigator.mediaDevices.enumerateDevices().then(values => {
+      this.reset();
       values.forEach(value => {
         if (value.deviceId === 'communications') {
           // don't resolve 'communications' device
@@ -92,10 +112,8 @@ export class SettingComponent implements OnInit, OnDestroy {
     } else {
       audioSource = this.selectedAudioInput.deviceId;
     }
-    const videoSource = this.selectedVideoInput ? this.selectedVideoInput.deviceId : null;
     return {
-      audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
-      video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+      audio: {deviceId: audioSource ? {exact: audioSource} : undefined}
     };
   }
 
@@ -144,7 +162,16 @@ export class SettingComponent implements OnInit, OnDestroy {
   private stopTestAudio() {
     if (this.testAudioSoundMeter) {
       this.testAudioSoundMeter.stop();
+      clearInterval(this.testAudioInterval);
+      this.instant.nativeElement.value = 0;
       this.audioEcho.nativeElement.srcObject = null;
     }
+  }
+
+  saveSettings() {
+    this.settingService.selectedAudioInput = this.selectedAudioInput;
+    this.settingService.selectedAudioOutput = this.selectedAudioOutput;
+    this.settingService.selectedVideoInput = this.selectedVideoInput;
+    this.toastr.success('保存成功');
   }
 }
